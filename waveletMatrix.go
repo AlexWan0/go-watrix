@@ -203,7 +203,7 @@ func (wm *waveletMatrix) UnmarshalBinary(in []byte) (err error) {
 	}
 	wm.layers = make([]rsdic.RSDic, layerNum)
 	for i := 0; i < layerNum; i++ {
-		wm.layers[i] = rsdic.New()
+		wm.layers[i] = *rsdic.New()
 		err = dec.Decode(&wm.layers[i])
 		if err != nil {
 			return

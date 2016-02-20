@@ -26,12 +26,12 @@ func (wmb *waveletMatrixBuilder) Build() WaveletTree {
 		filter(ones, blen-depth-1, &nextZeros, &nextOnes, rsd)
 		zeros = nextZeros
 		ones = nextOnes
-		layers[depth] = rsd
+		layers[depth] = *rsd
 	}
 	return &waveletMatrix{layers, dim, uint64(len(wmb.vals)), blen}
 }
 
-func filter(vals []uint64, depth uint64, nextZeros *[]uint64, nextOnes *[]uint64, rsd rsdic.RSDic) {
+func filter(vals []uint64, depth uint64, nextZeros *[]uint64, nextOnes *[]uint64, rsd *rsdic.RSDic) {
 	for _, val := range vals {
 		bit := ((val >> depth) & 1) == 1
 		rsd.PushBack(bit)
