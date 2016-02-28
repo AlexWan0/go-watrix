@@ -14,6 +14,12 @@ type RankResult struct {
 	freq uint64
 }
 
+const (
+	OpEqual = iota
+	OpLessThan
+	OpMoreThan
+)
+
 // WaveletTree supports several range queries.
 type WaveletTree interface {
 	// Num return the number of values in T
@@ -25,18 +31,19 @@ type WaveletTree interface {
 	// Lookup returns T[pos]
 	Lookup(pos uint64) uint64
 
-	// Rank returns the number of val's in T[0...pos)
+	// Rank returns the number of c (== val) in T[0...pos)
 	Rank(pos uint64, val uint64) uint64
 
-	// RankLessTahn returns the number of val (< valMax) in T[0...pos)
-	RankLessThan(pos uint64, valMax uint64) uint64
+	// RankLessTahn returns the number of c (< val) in T[0...pos)
+	RankLessThan(pos uint64, val uint64) uint64
 
-	// RankMoreThan returns the number of val (> valMin) in T[0...pos)
-	RankMoreThan(pos uint64, valMin uint64) uint64
+	// RankMoreThan returns the number of c (> val) in T[0...pos)
+	RankMoreThan(pos uint64, val uint64) uint64
 
-	// Rank range returns the number of min <= c < max
+	// returns the number of c that satisfies 'c <op> val'
 	// in T[ranze.Bpos, ranze.Epos)
-	RankRange(ranze Range, min uint64) Range
+	// op should be one of {OpEaual, OpLessThan, OpMoreThan}.
+	RangedRankOp(ranze Range, val uint64, op int) uint64
 
 	// Select returns the position of (rank+1)-th val in T
 	Select(rank uint64, val uint64) uint64

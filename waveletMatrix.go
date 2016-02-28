@@ -47,16 +47,10 @@ func (wm waveletMatrix) Lookup(pos uint64) uint64 {
 	return val
 }
 
-const (
-	OpEqual = iota
-	OpLessThan
-	OpMoreThan
-)
-
 func (wm waveletMatrix) Rank(pos uint64, val uint64) uint64 {
-	// return wm.RangedRankOp(Range{0, pos}, val, OpEqual) // Works but disabled for now to keep test cov.
-	ranze := wm.RankRange(Range{0, pos}, val)
-	return ranze.Epos - ranze.Bpos
+	return wm.RangedRankOp(Range{0, pos}, val, OpEqual) // Works but disabled for now to keep test cov.
+	// ranze := wm.RankRange(Range{0, pos}, val)
+	// return ranze.Epos - ranze.Bpos
 }
 
 func (wm waveletMatrix) RankLessThan(pos uint64, val uint64) (rankLessThan uint64) {
@@ -65,21 +59,6 @@ func (wm waveletMatrix) RankLessThan(pos uint64, val uint64) (rankLessThan uint6
 
 func (wm waveletMatrix) RankMoreThan(pos uint64, val uint64) (rankLessThan uint64) {
 	return wm.RangedRankOp(Range{0, pos}, val, OpMoreThan)
-}
-
-func (wm waveletMatrix) RankRange(ranze Range, val uint64) Range {
-	for depth := uint64(0); depth < wm.blen; depth++ {
-		bit := getMSB(val, depth, wm.blen)
-		rsd := wm.layers[depth]
-		if bit {
-			ranze.Bpos = rsd.ZeroNum() + rsd.Rank(ranze.Bpos, bit)
-			ranze.Epos = rsd.ZeroNum() + rsd.Rank(ranze.Epos, bit)
-		} else {
-			ranze.Bpos = rsd.Rank(ranze.Bpos, bit)
-			ranze.Epos = rsd.Rank(ranze.Epos, bit)
-		}
-	}
-	return ranze
 }
 
 func (wm waveletMatrix) RangedRankOp(ranze Range, val uint64, op int) uint64 {
