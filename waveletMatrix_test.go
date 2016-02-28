@@ -74,18 +74,27 @@ func buildWaveletHelper(t *testing.T, num uint64, testNum uint64, dim uint64, or
 
 func testWaveletHelper(t *testing.T, wm WaveletTree, num uint64, testNum uint64, dim uint64, orig []uint64, ranks, ranksLessThan, ranksMoreThan [][]uint64 ) {
 	So(wm.Num(), ShouldEqual, num)
-	So(wm.Select(num, 0), ShouldEqual, num)
+	So(wm.Select(num, 0), ShouldEqual, num) // equals num: Not Found
 	for i := uint64(0); i < testNum; i++ {
 		ind := uint64(rand.Int31n(int32(num)))
 		x := uint64(rand.Int31n(int32(dim)))
+
 		So(wm.Lookup(ind), ShouldEqual, orig[ind])
+
 		So(wm.Rank(ind, x), ShouldEqual, ranks[x][ind])
+		So(wm.RangedRankRange(Range{0, ind}, Range{x, x + 1}), ShouldEqual, ranks[x][ind])
+
 		So(wm.RankLessThan(ind, x), ShouldEqual, ranksLessThan[x][ind])
+		So(wm.RangedRankRange(Range{0, ind}, Range{0, x}), ShouldEqual, ranksLessThan[x][ind])
+
 		So(wm.RankMoreThan(ind, x), ShouldEqual, ranksMoreThan[x][ind])
+		So(wm.RangedRankRange(Range{0, ind}, Range{x + 1, dim}), ShouldEqual, ranksMoreThan[x][ind])
+
 		c, rank := wm.LookupAndRank(ind)
 		So(c, ShouldEqual, orig[ind])
 		So(rank, ShouldEqual, ranks[c][ind])
 		So(wm.Select(rank, c), ShouldEqual, ind)
+
 		ranges := make([]Range, 0)
 		for j := 0; j < 4; j++ {
 			ranges = append(ranges, generateRange(num))
@@ -101,6 +110,12 @@ func testWaveletHelper(t *testing.T, wm WaveletTree, num uint64, testNum uint64,
 		sort.Ints(vs)
 		So(wm.Quantile(ranze, k), ShouldEqual, vs[k])
 	}
+	Convey("when op is wrong", func() {
+		So(wm.RangedRankOp(Range{0, num}, 0, OpMax), ShouldEqual, 0)
+	})
+	// Convey("when range is wrong", func() {
+	// 	So(wm.RangedRankOp(Range{num, 0}, 0, OpEqual), ShouldEqual, 0) // NOT Supported
+	// })
 }
 
 func TestWaveletMatrix(t *testing.T) {
@@ -113,6 +128,8 @@ func TestWaveletMatrix(t *testing.T) {
 			So(wm.Rank(0, 0), ShouldEqual, 0)
 			So(wm.RankLessThan(0, 0), ShouldEqual, 0)
 			So(wm.RankMoreThan(0, 0), ShouldEqual, 0)
+			So(wm.RangedRankOp(Range{0, 0}, 0, OpEqual), ShouldEqual, 0)
+			So(wm.RangedRankRange(Range{0, 0}, Range{0,0}), ShouldEqual, 0)
 			So(wm.Select(0, 0), ShouldEqual, 0) // equals num: Not Found
 		})
 	})

@@ -18,6 +18,7 @@ const (
 	OpEqual = iota
 	OpLessThan
 	OpMoreThan
+	OpMax
 )
 
 // WaveletTree supports several range queries.
@@ -45,7 +46,13 @@ type WaveletTree interface {
 	// op should be one of {OpEaual, OpLessThan, OpMoreThan}.
 	RangedRankOp(ranze Range, val uint64, op int) uint64
 
+	// returns the number of c that falls within valueRange
+	// i.e. [valueRange.Bpos, valueRange.Epos)
+	// in T[ranze.Bpos, ranze.Epos)
+	RangedRankRange(ranze Range, valueRange Range) uint64
+
 	// Select returns the position of (rank+1)-th val in T
+	// If not found, returns Num().
 	Select(rank uint64, val uint64) uint64
 
 	// LookupAndRank returns T[pos] and Rank(pos, T[pos])

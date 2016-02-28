@@ -93,6 +93,12 @@ func (wm waveletMatrix) RangedRankOp(ranze Range, val uint64, op int) uint64 {
 	}
 }
 
+func (wm waveletMatrix) RangedRankRange(ranze Range, valueRange Range) uint64 {
+	end := wm.RangedRankOp(ranze, valueRange.Epos, OpLessThan)
+	beg := wm.RangedRankOp(ranze, valueRange.Bpos, OpLessThan)
+	return end - beg
+}
+
 func (wm waveletMatrix) Select(rank uint64, val uint64) uint64 {
 	return wm.selectHelper(rank, val, 0, 0)
 }
