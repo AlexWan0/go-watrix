@@ -170,84 +170,78 @@ const (
 	N = 10000000 // 10M 10^7
 )
 
-func setup(num uint64) (WaveletTree, map[uint64]uint64) {
-	builder := NewBuilder()
-	counter := make(map[uint64]uint64)
+
+type benchFixture struct {
+	builder Builder
+	wt WaveletTree
+	counter map[uint64]uint64
+	vs []uint64
+}
+var f *benchFixture = nil
+
+func buildHelper(b *testing.B) {
+	if f != nil {
+		return
+	}
+
+	f = &benchFixture{nil,nil,nil,nil}
+
+	f.builder = NewBuilder()
+	f.counter = make(map[uint64]uint64)
 	for i := uint64(0); i < N; i++ {
 		x := uint64(rand.Int63())
-		counter[x]++
-		builder.PushBack(x)
+		f.counter[x]++
+		f.builder.PushBack(x)
+		f.vs = append(f.vs, x)
 	}
-	return builder.Build(), counter
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		f.wt = f.builder.Build()
+	}
 }
 
 func BenchmarkWTBuild10M(b *testing.B) {
-	N := uint64(1000000)
-	raw := make([]uint64, N)
-	builder := NewBuilder()
-	for i := uint64(0); i < N; i++ {
-		x := uint64(rand.Int63())
-		raw[i] = x
-		builder.PushBack(x)
-	}
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		builder.Build()
-	}
+	buildHelper(b)
 }
 
 func BenchmarkWTLookup10M(b *testing.B) {
-	wt, _ := setup(N)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ind := uint64(rand.Int63() % N)
-		wt.Lookup(ind)
+		f.wt.Lookup(ind)
 	}
 }
 
 func BenchmarkWTRank10M(b *testing.B) {
-	wt, _ := setup(N)
-	dim := wt.Dim()
+	dim := f.wt.Dim()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ind := uint64(rand.Int63() % N)
 		x := uint64(rand.Int63()) % dim
-		wt.Rank(ind, x)
+		f.wt.Rank(ind, x)
 	}
 }
 
 func BenchmarkWTRankLessThan10M(b *testing.B) {
-	wt, _ := setup(N)
-	dim := wt.Dim()
+	dim := f.wt.Dim()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ind := uint64(rand.Int63() % N)
 		x := uint64(rand.Int63()) % dim
-		wt.RankLessThan(ind, x)
+		f.wt.RankLessThan(ind, x)
 	}
 }
 
 func BenchmarkWTSelect10M(b *testing.B) {
-	wt, counter := setup(N)
-	vals := make([]uint64, 0)
-	for k, _ := range counter {
-		vals = append(vals, k)
-	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		x := vals[uint64(rand.Int63())%uint64(len(vals))]
-		rank := uint64(rand.Int63()) % counter[x]
-		wt.Select(rank, x)
+		x := f.vs[ uint64(rand.Int63()) % uint64(len(f.vs)) ]
+		rank := uint64(rand.Int63()) % f.counter[x]
+		f.wt.Select(rank, x)
 	}
 }
 
 func BenchmarkWTQuantile10M(b *testing.B) {
-	wt, counter := setup(N)
-	vals := make([]uint64, 0)
-	for k, _ := range counter {
-		vals = append(vals, k)
-	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ranze := generateRange(N)
@@ -255,17 +249,16 @@ func BenchmarkWTQuantile10M(b *testing.B) {
 			continue
 		}
 		k := uint64(rand.Int()) % (ranze.Epos - ranze.Bpos)
-		wt.Quantile(ranze, k)
+		f.wt.Quantile(ranze, k)
 	}
 }
 
 func BenchmarkRawLookup10M(b *testing.B) {
-	vs := make([]uint64, N)
 	b.ResetTimer()
 	dummy := uint64(0)
 	for i := 0; i < b.N; i++ {
 		ind := uint64(rand.Int63() % N)
-		dummy += vs[ind]
+		dummy += f.vs[ind]
 	}
 }
 
@@ -285,13 +278,13 @@ func BenchmarkRawRank10M(b *testing.B) {
 }
 
 func BenchmarkRawSelect10M(b *testing.B) {
-	vs := make([]uint64, N)
+	// vs := make([]uint64, N)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		rank := uint64(rand.Int63() % N)
 		count := uint64(0)
 		for j := uint64(0); j < N; j++ {
-			if vs[j] == 0 {
+			if f.vs[j] == 0 {
 				count++
 				if count == rank {
 					break
