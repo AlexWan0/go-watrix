@@ -217,6 +217,17 @@ func BenchmarkWTRank10M(b *testing.B) {
 	}
 }
 
+func BenchmarkWTRankLessThan10M(b *testing.B) {
+	wt, _ := setup(N)
+	dim := wt.Dim()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		ind := uint64(rand.Int63() % N)
+		x := uint64(rand.Int63()) % dim
+		wt.RankLessThan(ind, x)
+	}
+}
+
 func BenchmarkWTSelect10M(b *testing.B) {
 	wt, counter := setup(N)
 	vals := make([]uint64, 0)
