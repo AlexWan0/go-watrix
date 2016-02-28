@@ -28,6 +28,12 @@ type WaveletTree interface {
 	// Rank returns the number of val's in T[0...pos)
 	Rank(pos uint64, val uint64) uint64
 
+	// RankLessTahn returns the number of val (< valMax) in T[0...pos)
+	RankLessThan(pos uint64, valMax uint64) uint64
+
+	// RankMoreThan returns the number of val (> valMin) in T[0...pos)
+	RankMoreThan(pos uint64, valMin uint64) uint64
+
 	// Rank range returns the number of min <= c < max
 	// in T[ranze.Bpos, ranze.Epos)
 	RankRange(ranze Range, min uint64) Range

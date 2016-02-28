@@ -48,10 +48,12 @@ func origIntersect(orig []uint64, ranges []Range, k int) []uint64 {
 	return ret
 }
 
-func buildWaveletHelper(t *testing.T, num uint64, testNum uint64, dim uint64, orig []uint64, ranks [][]uint64 ) WaveletTree {
+func buildWaveletHelper(t *testing.T, num uint64, testNum uint64, dim uint64, orig []uint64, ranks, ranksLessThan, ranksMoreThan [][]uint64 ) WaveletTree {
 	wmb := NewBuilder()
 	for i := 0; i < len(ranks); i++ {
 		ranks[i] = make([]uint64, num)
+		ranksLessThan[i] = make([]uint64, num)
+		ranksMoreThan[i] = make([]uint64, num)
 	}
 	freqs := make([]uint64, dim)
 	for i := uint64(0); i < num; i++ {
@@ -60,13 +62,17 @@ func buildWaveletHelper(t *testing.T, num uint64, testNum uint64, dim uint64, or
 		wmb.PushBack(x)
 		for j := uint64(0); j < dim; j++ {
 			ranks[j][i] = freqs[j]
+			for k := uint64(0); k < j; k++ {
+				ranksLessThan[j][i] += freqs[k]
+			}
+			ranksMoreThan[j][i] = i - ranks[j][i] - ranksLessThan[j][i]
 		}
 		freqs[x]++
 	}
 	return wmb.Build()
 }
 
-func testWaveletHelper(t *testing.T, wm WaveletTree, num uint64, testNum uint64, dim uint64, orig []uint64, ranks [][]uint64 ) {
+func testWaveletHelper(t *testing.T, wm WaveletTree, num uint64, testNum uint64, dim uint64, orig []uint64, ranks, ranksLessThan, ranksMoreThan [][]uint64 ) {
 	So(wm.Num(), ShouldEqual, num)
 	So(wm.Select(num, 0), ShouldEqual, num)
 	for i := uint64(0); i < testNum; i++ {
@@ -74,6 +80,8 @@ func testWaveletHelper(t *testing.T, wm WaveletTree, num uint64, testNum uint64,
 		x := uint64(rand.Int31n(int32(dim)))
 		So(wm.Lookup(ind), ShouldEqual, orig[ind])
 		So(wm.Rank(ind, x), ShouldEqual, ranks[x][ind])
+		So(wm.RankLessThan(ind, x), ShouldEqual, ranksLessThan[x][ind])
+		So(wm.RankMoreThan(ind, x), ShouldEqual, ranksMoreThan[x][ind])
 		c, rank := wm.LookupAndRank(ind)
 		So(c, ShouldEqual, orig[ind])
 		So(rank, ShouldEqual, ranks[c][ind])
@@ -103,6 +111,8 @@ func TestWaveletMatrix(t *testing.T) {
 			So(wm.Num(), ShouldEqual, 0)
 			So(wm.Dim(), ShouldEqual, 0)
 			So(wm.Rank(0, 0), ShouldEqual, 0)
+			So(wm.RankLessThan(0, 0), ShouldEqual, 0)
+			So(wm.RankMoreThan(0, 0), ShouldEqual, 0)
 			So(wm.Select(0, 0), ShouldEqual, 0) // equals num: Not Found
 		})
 	})
@@ -112,9 +122,11 @@ func TestWaveletMatrix(t *testing.T) {
 		testNum := uint64(10)
 		orig := make([]uint64, num)
 		ranks := make([][]uint64, dim)
+		ranksLessThan := make([][]uint64, dim)
+		ranksMoreThan := make([][]uint64, dim)
 
-		wm := buildWaveletHelper(t, num, testNum, dim, orig, ranks)
-		testWaveletHelper(t, wm, num, testNum, dim, orig, ranks)
+		wm := buildWaveletHelper(t, num, testNum, dim, orig, ranks, ranksLessThan, ranksMoreThan)
+		testWaveletHelper(t, wm, num, testNum, dim, orig, ranks, ranksLessThan, ranksMoreThan)
 	})
 	Convey("When a random bit vector is marshaled", t, func() {
 		num := uint64(14000)
@@ -122,8 +134,10 @@ func TestWaveletMatrix(t *testing.T) {
 		testNum := uint64(10)
 		orig := make([]uint64, num)
 		ranks := make([][]uint64, dim)
+		ranksLessThan := make([][]uint64, dim)
+		ranksMoreThan := make([][]uint64, dim)
 
-		wmbefore := buildWaveletHelper(t, num, testNum, dim, orig, ranks)
+		wmbefore := buildWaveletHelper(t, num, testNum, dim, orig, ranks, ranksLessThan, ranksMoreThan)
 
 		out, err := wmbefore.MarshalBinary()
 		So(err, ShouldBeNil)
@@ -131,7 +145,7 @@ func TestWaveletMatrix(t *testing.T) {
 		err = wm.UnmarshalBinary(out)
 		So(err, ShouldBeNil)
 
-		testWaveletHelper(t, wm, num, testNum, dim, orig, ranks)
+		testWaveletHelper(t, wm, num, testNum, dim, orig, ranks, ranksLessThan, ranksMoreThan)
 	})
 }
 
