@@ -1,4 +1,11 @@
 language: go
 
+go:
+    - 1.4
+    - 1.5
+
+before_script:
+    - lscpu
+
 script:
     - go test -v -bench . -benchmem
