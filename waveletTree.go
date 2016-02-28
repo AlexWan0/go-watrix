@@ -41,12 +41,12 @@ type WaveletTree interface {
 	// RankMoreThan returns the number of c (> val) in T[0...pos)
 	RankMoreThan(pos uint64, val uint64) uint64
 
-	// returns the number of c that satisfies 'c <op> val'
+	// RangedRankOp returns the number of c that satisfies 'c <op> val'
 	// in T[ranze.Bpos, ranze.Epos)
 	// op should be one of {OpEaual, OpLessThan, OpMoreThan}.
 	RangedRankOp(ranze Range, val uint64, op int) uint64
 
-	// returns the number of c that falls within valueRange
+	// RangedRankRange returns the number of c that falls within valueRange
 	// i.e. [valueRange.Bpos, valueRange.Epos)
 	// in T[ranze.Bpos, ranze.Epos)
 	RangedRankRange(ranze Range, valueRange Range) uint64
