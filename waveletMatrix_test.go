@@ -48,6 +48,53 @@ func origIntersect(orig []uint64, ranges []Range, k int) []uint64 {
 	return ret
 }
 
+func buildWaveletHelper(t *testing.T, num uint64, testNum uint64, dim uint64, orig []uint64, ranks [][]uint64 ) WaveletTree {
+	wmb := NewBuilder()
+	for i := 0; i < len(ranks); i++ {
+		ranks[i] = make([]uint64, num)
+	}
+	freqs := make([]uint64, dim)
+	for i := uint64(0); i < num; i++ {
+		x := uint64(rand.Int31n(int32(dim)))
+		orig[i] = x
+		wmb.PushBack(x)
+		for j := uint64(0); j < dim; j++ {
+			ranks[j][i] = freqs[j]
+		}
+		freqs[x]++
+	}
+	return wmb.Build()
+}
+
+func testWaveletHelper(t *testing.T, wm WaveletTree, num uint64, testNum uint64, dim uint64, orig []uint64, ranks [][]uint64 ) {
+	So(wm.Num(), ShouldEqual, num)
+	So(wm.Select(num, 0), ShouldEqual, num)
+	for i := uint64(0); i < testNum; i++ {
+		ind := uint64(rand.Int31n(int32(num)))
+		x := uint64(rand.Int31n(int32(dim)))
+		So(wm.Lookup(ind), ShouldEqual, orig[ind])
+		So(wm.Rank(ind, x), ShouldEqual, ranks[x][ind])
+		c, rank := wm.LookupAndRank(ind)
+		So(c, ShouldEqual, orig[ind])
+		So(rank, ShouldEqual, ranks[c][ind])
+		So(wm.Select(rank, c), ShouldEqual, ind)
+		ranges := make([]Range, 0)
+		for j := 0; j < 4; j++ {
+			ranges = append(ranges, generateRange(num))
+		}
+		So(wm.Intersect(ranges, 4), ShouldResemble, origIntersect(orig, ranges, 4))
+
+		ranze := generateRange(num)
+		k := uint64(rand.Int63()) % (ranze.Epos - ranze.Bpos)
+		vs := make([]int, ranze.Epos-ranze.Bpos)
+		for i := uint64(0); i < uint64(len(vs)); i++ {
+			vs[i] = int(orig[i+ranze.Bpos])
+		}
+		sort.Ints(vs)
+		So(wm.Quantile(ranze, k), ShouldEqual, vs[k])
+	}
+}
+
 func TestWaveletMatrix(t *testing.T) {
 	Convey("When a vector is empty", t, func() {
 		b := NewBuilder()
@@ -56,97 +103,35 @@ func TestWaveletMatrix(t *testing.T) {
 			So(wm.Num(), ShouldEqual, 0)
 			So(wm.Dim(), ShouldEqual, 0)
 			So(wm.Rank(0, 0), ShouldEqual, 0)
+			So(wm.Select(0, 0), ShouldEqual, 0) // equals num: Not Found
 		})
 	})
 	Convey("When a random bit vector is generated", t, func() {
-		wmb := NewBuilder()
 		num := uint64(14000)
 		dim := uint64(100)
-		testNum := 10
+		testNum := uint64(10)
 		orig := make([]uint64, num)
 		ranks := make([][]uint64, dim)
-		for i := 0; i < len(ranks); i++ {
-			ranks[i] = make([]uint64, num)
-		}
-		freqs := make([]uint64, dim)
-		for i := uint64(0); i < num; i++ {
-			x := uint64(rand.Int31n(int32(dim)))
-			orig[i] = x
-			wmb.PushBack(x)
-			for j := uint64(0); j < dim; j++ {
-				ranks[j][i] = freqs[j]
-			}
-			freqs[x]++
-		}
-		wm := wmb.Build()
-		So(wm.Num(), ShouldEqual, num)
-		for i := 0; i < testNum; i++ {
-			ind := uint64(rand.Int31n(int32(num)))
-			x := uint64(rand.Int31n(int32(dim)))
-			So(wm.Lookup(ind), ShouldEqual, orig[ind])
-			So(wm.Rank(ind, x), ShouldEqual, ranks[x][ind])
-			c, rank := wm.LookupAndRank(ind)
-			So(c, ShouldEqual, orig[ind])
-			So(rank, ShouldEqual, ranks[c][ind])
-			So(wm.Select(rank, c), ShouldEqual, ind)
-			ranges := make([]Range, 0)
-			for j := 0; j < 4; j++ {
-				ranges = append(ranges, generateRange(num))
-			}
-			So(wm.Intersect(ranges, 4), ShouldResemble, origIntersect(orig, ranges, 4))
-		}
+
+		wm := buildWaveletHelper(t, num, testNum, dim, orig, ranks)
+		testWaveletHelper(t, wm, num, testNum, dim, orig, ranks)
 	})
 	Convey("When a random bit vector is marshaled", t, func() {
-		wmb := NewBuilder()
 		num := uint64(14000)
 		dim := uint64(5)
-		testNum := 10
+		testNum := uint64(10)
 		orig := make([]uint64, num)
 		ranks := make([][]uint64, dim)
-		for i := 0; i < len(ranks); i++ {
-			ranks[i] = make([]uint64, num)
-		}
-		freqs := make([]uint64, dim)
-		for i := uint64(0); i < num; i++ {
-			x := uint64(rand.Int31n(int32(dim)))
-			orig[i] = x
-			wmb.PushBack(x)
-			for j := uint64(0); j < dim; j++ {
-				ranks[j][i] = freqs[j]
-			}
-			freqs[x]++
-		}
-		wmbefore := wmb.Build()
+
+		wmbefore := buildWaveletHelper(t, num, testNum, dim, orig, ranks)
+
 		out, err := wmbefore.MarshalBinary()
 		So(err, ShouldBeNil)
 		wm := New()
 		err = wm.UnmarshalBinary(out)
 		So(err, ShouldBeNil)
-		So(wm.Num(), ShouldEqual, num)
-		for i := 0; i < testNum; i++ {
-			ind := uint64(rand.Int31n(int32(num)))
-			x := uint64(rand.Int31n(int32(dim)))
-			So(wm.Lookup(ind), ShouldEqual, orig[ind])
-			So(wm.Rank(ind, x), ShouldEqual, ranks[x][ind])
-			c, rank := wm.LookupAndRank(ind)
-			So(c, ShouldEqual, orig[ind])
-			So(rank, ShouldEqual, ranks[c][ind])
-			So(wm.Select(rank, c), ShouldEqual, ind)
-			ranges := make([]Range, 0)
-			for j := 0; j < 4; j++ {
-				ranges = append(ranges, generateRange(num))
-			}
-			So(wm.Intersect(ranges, 4), ShouldResemble, origIntersect(orig, ranges, 4))
 
-			ranze := generateRange(num)
-			k := uint64(rand.Int63()) % (ranze.Epos - ranze.Bpos)
-			vs := make([]int, ranze.Epos-ranze.Bpos)
-			for i := uint64(0); i < uint64(len(vs)); i++ {
-				vs[i] = int(orig[i+ranze.Bpos])
-			}
-			sort.Ints(vs)
-			So(wm.Quantile(ranze, k), ShouldEqual, vs[k])
-		}
+		testWaveletHelper(t, wm, num, testNum, dim, orig, ranks)
 	})
 }
 
