@@ -1,6 +1,7 @@
 package wavelettree
 
 import (
+	"fmt"
 	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
 	"sort"
@@ -48,7 +49,7 @@ func origIntersect(orig []uint64, ranges []Range, k int) []uint64 {
 	return ret
 }
 
-func buildWaveletHelper(t *testing.T, num uint64, testNum uint64, dim uint64, orig []uint64, ranks, ranksLessThan, ranksMoreThan [][]uint64 ) WaveletTree {
+func buildWaveletHelper(t *testing.T, num uint64, testNum uint64, dim uint64, orig []uint64, ranks, ranksLessThan, ranksMoreThan [][]uint64) WaveletTree {
 	wmb := NewBuilder()
 	for i := 0; i < len(ranks); i++ {
 		ranks[i] = make([]uint64, num)
@@ -72,7 +73,7 @@ func buildWaveletHelper(t *testing.T, num uint64, testNum uint64, dim uint64, or
 	return wmb.Build()
 }
 
-func testWaveletHelper(t *testing.T, wm WaveletTree, num uint64, testNum uint64, dim uint64, orig []uint64, ranks, ranksLessThan, ranksMoreThan [][]uint64 ) {
+func testWaveletHelper(t *testing.T, wm WaveletTree, num uint64, testNum uint64, dim uint64, orig []uint64, ranks, ranksLessThan, ranksMoreThan [][]uint64) {
 	So(wm.Num(), ShouldEqual, num)
 	So(wm.Select(num, 0), ShouldEqual, num) // equals num: Not Found
 	for i := uint64(0); i < testNum; i++ {
@@ -129,7 +130,7 @@ func TestWaveletMatrix(t *testing.T) {
 			So(wm.RankLessThan(0, 0), ShouldEqual, 0)
 			So(wm.RankMoreThan(0, 0), ShouldEqual, 0)
 			So(wm.RangedRankOp(Range{0, 0}, 0, OpEqual), ShouldEqual, 0)
-			So(wm.RangedRankRange(Range{0, 0}, Range{0,0}), ShouldEqual, 0)
+			So(wm.RangedRankRange(Range{0, 0}, Range{0, 0}), ShouldEqual, 0)
 			So(wm.Select(0, 0), ShouldEqual, 0) // equals num: Not Found
 		})
 	})
@@ -167,81 +168,83 @@ func TestWaveletMatrix(t *testing.T) {
 }
 
 const (
-	N = 10000000 // 10M 10^7
+	// N = 10000000 // 10M 10^7
+	N = 1000000 // 1M 10^6
+	// N = 1 << 20 // 1 Mi * 64 bit = 8 MiB
 )
-
 
 type benchFixture struct {
 	builder Builder
-	wt WaveletTree
+	wt      WaveletTree
 	counter map[uint64]uint64
-	vs []uint64
+	vals    []uint64
 }
-var f *benchFixture = nil
 
-func buildHelper(b *testing.B) {
-	if f != nil {
-		return
+var bf *benchFixture = nil
+
+func initBenchFixture(b *testing.B) {
+	bf = &benchFixture{
+		builder: NewBuilder(),
+		wt:      nil, // nil at this time
+		counter: make(map[uint64]uint64),
+		vals:    make([]uint64, 0),
 	}
 
-	f = &benchFixture{nil,nil,nil,nil}
-
-	f.builder = NewBuilder()
-	f.counter = make(map[uint64]uint64)
 	for i := uint64(0); i < N; i++ {
 		x := uint64(rand.Int63())
-		f.counter[x]++
-		f.builder.PushBack(x)
-		f.vs = append(f.vs, x)
+		bf.counter[x]++
+		bf.builder.PushBack(x)
+		bf.vals = append(bf.vals, x)
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		f.wt = f.builder.Build()
+		bf.wt = bf.builder.Build()
 	}
+	fmt.Printf("{N = %v is used in the tests below}\n\t\t\t\t", N)
 }
 
-func BenchmarkWTBuild10M(b *testing.B) {
-	buildHelper(b)
+func BenchmarkWTBuild(b *testing.B) {
+	initBenchFixture(b)
 }
 
-func BenchmarkWTLookup10M(b *testing.B) {
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		ind := uint64(rand.Int63() % N)
-		f.wt.Lookup(ind)
-	}
-}
-
-func BenchmarkWTRank10M(b *testing.B) {
-	dim := f.wt.Dim()
+func BenchmarkWTLookup(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ind := uint64(rand.Int63() % N)
-		x := uint64(rand.Int63()) % dim
-		f.wt.Rank(ind, x)
+		bf.wt.Lookup(ind)
 	}
 }
 
-func BenchmarkWTRankLessThan10M(b *testing.B) {
-	dim := f.wt.Dim()
+func BenchmarkWTRank(b *testing.B) {
+	dim := bf.wt.Dim()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ind := uint64(rand.Int63() % N)
 		x := uint64(rand.Int63()) % dim
-		f.wt.RankLessThan(ind, x)
+		bf.wt.Rank(ind, x)
 	}
 }
 
-func BenchmarkWTSelect10M(b *testing.B) {
+func BenchmarkWTRankLessThan(b *testing.B) {
+	dim := bf.wt.Dim()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		x := f.vs[ uint64(rand.Int63()) % uint64(len(f.vs)) ]
-		rank := uint64(rand.Int63()) % f.counter[x]
-		f.wt.Select(rank, x)
+		ind := uint64(rand.Int63() % N)
+		x := uint64(rand.Int63()) % dim
+		bf.wt.RankLessThan(ind, x)
 	}
 }
 
-func BenchmarkWTQuantile10M(b *testing.B) {
+func BenchmarkWTSelect(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		x := bf.vals[uint64(rand.Int63())%uint64(len(bf.vals))]
+		rank := uint64(rand.Int63()) % bf.counter[x]
+		bf.wt.Select(rank, x)
+	}
+}
+
+func BenchmarkWTQuantile(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ranze := generateRange(N)
@@ -249,20 +252,20 @@ func BenchmarkWTQuantile10M(b *testing.B) {
 			continue
 		}
 		k := uint64(rand.Int()) % (ranze.Epos - ranze.Bpos)
-		f.wt.Quantile(ranze, k)
+		bf.wt.Quantile(ranze, k)
 	}
 }
 
-func BenchmarkRawLookup10M(b *testing.B) {
+func BenchmarkRawLookup(b *testing.B) {
 	b.ResetTimer()
 	dummy := uint64(0)
 	for i := 0; i < b.N; i++ {
 		ind := uint64(rand.Int63() % N)
-		dummy += f.vs[ind]
+		dummy += bf.vals[ind]
 	}
 }
 
-func BenchmarkRawRank10M(b *testing.B) {
+func BenchmarkRawRank(b *testing.B) {
 	vs := make([]uint64, N)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -277,14 +280,14 @@ func BenchmarkRawRank10M(b *testing.B) {
 	}
 }
 
-func BenchmarkRawSelect10M(b *testing.B) {
+func BenchmarkRawSelect(b *testing.B) {
 	// vs := make([]uint64, N)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		rank := uint64(rand.Int63() % N)
 		count := uint64(0)
 		for j := uint64(0); j < N; j++ {
-			if f.vs[j] == 0 {
+			if bf.vals[j] == 0 {
 				count++
 				if count == rank {
 					break
@@ -294,7 +297,7 @@ func BenchmarkRawSelect10M(b *testing.B) {
 	}
 }
 
-func BenchmarkRawQuantile10M(b *testing.B) {
+func BenchmarkRawQuantile(b *testing.B) {
 	vs := make([]int, N)
 	b.ResetTimer()
 	dummy := 0
