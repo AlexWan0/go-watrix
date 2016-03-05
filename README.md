@@ -1,6 +1,8 @@
 wavelettree
 ============
 
+[![Build Status](https://travis-ci.org/sekineh/waveletTree.svg?branch=master)](https://travis-ci.org/sekineh/waveletTree)
+
 waveletTree is a Go package for myriad array operations using wavelet trees.
 
 waveletTree stores a non-negative intger array V[0...n), 0 <= V[i] < s and
@@ -57,6 +59,3 @@ The results shows that RSDic operations require always
 	BenchmarkRawRank10M	     500	   4683822 ns/op
 	BenchmarkRawSelect10M	     500	   6085992 ns/op
 	BenchmarkRawQuantile10M	     100	  44362885 ns/op
-
-
-
