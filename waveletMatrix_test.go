@@ -167,6 +167,75 @@ func TestWaveletMatrix(t *testing.T) {
 	})
 }
 
+func TestSelectExperimental(t *testing.T) {
+	src := []uint64{
+		8, 9, 10, 11, 12, 18, 8, 9, 10, 11,
+		12, 18, 19, 20, 13, 14, 15, 3, 4, 5,
+		1, 7, 17, 2, 6,
+	}
+	builder := NewBuilder()
+	for _, v := range src {
+		builder.PushBack(v)
+	}
+	wt := builder.Build()
+	wm, ok := wt.(*waveletMatrix)
+	Convey("RangedSelect", t, func() {
+		So(ok, ShouldEqual, true)
+		So(wm.RangedSelect(Range{0, 10}, 0, 11), ShouldEqual, 3)
+		So(wm.RangedSelect(Range{0, 10}, 1, 11), ShouldEqual, 9)
+		So(wm.RangedSelect(Range{10, 20}, 0, 13), ShouldEqual, 14)
+		So(wm.RangedSelect(Range{10, 20}, 1, 13), ShouldEqual, 20)
+	})
+	Convey("RangedRankWithAmbiguity", t, func() {
+		So(wm.RangedRankWithAmbiguity(Range{0, 10}, 11, 0), ShouldEqual, 2)
+		So(wm.RangedRankWithAmbiguity(Range{0, 10}, 11, 1), ShouldEqual, 4)
+		So(wm.RangedRankWithAmbiguity(Range{0, 10}, 11, 2), ShouldEqual, 8)
+		So(wm.RangedRankWithAmbiguity(Range{0, 10}, 11, 3), ShouldEqual, 9)
+		So(wm.RangedRankWithAmbiguity(Range{0, 10}, 11, 4), ShouldEqual, 9)
+		So(wm.RangedRankWithAmbiguity(Range{0, 10}, 11, 5), ShouldEqual, 10)
+
+		So(wm.RangedRankWithAmbiguity(Range{10, 20}, 12, 0), ShouldEqual, 1)  // 0b1100 12
+		So(wm.RangedRankWithAmbiguity(Range{10, 20}, 12, 1), ShouldEqual, 2)  // 0b110x 12-13
+		So(wm.RangedRankWithAmbiguity(Range{10, 20}, 12, 2), ShouldEqual, 4)  // 0b11xx 12-16
+		So(wm.RangedRankWithAmbiguity(Range{10, 20}, 12, 3), ShouldEqual, 4)  // 0b1xxx 8-15
+		So(wm.RangedRankWithAmbiguity(Range{10, 20}, 12, 4), ShouldEqual, 7)  // 0b0xxxx 0-15
+		So(wm.RangedRankWithAmbiguity(Range{10, 20}, 12, 5), ShouldEqual, 10) // 0b0xxxxx 0-31
+	})
+	Convey("RangedSelectWithAmbiguity", t, func() {
+		So(wm.RangedSelectWithAmbiguity(Range{0, 10}, 0, 11, 0), ShouldEqual, 3) // 0b1011 11
+		So(wm.RangedSelectWithAmbiguity(Range{0, 10}, 0, 11, 1), ShouldEqual, 2) // 0b101x 10-11
+		So(wm.RangedSelectWithAmbiguity(Range{0, 10}, 0, 11, 2), ShouldEqual, 0) // 0b10xx 8-11
+		So(wm.RangedSelectWithAmbiguity(Range{0, 10}, 0, 11, 3), ShouldEqual, 0) // 0b1xxx 8-15
+		So(wm.RangedSelectWithAmbiguity(Range{0, 10}, 0, 11, 4), ShouldEqual, 0) // 0b0xxxx 0-15
+		So(wm.RangedSelectWithAmbiguity(Range{0, 10}, 0, 11, 5), ShouldEqual, 0) // 0b0xxxxx 0-31
+
+		So(wm.RangedSelectWithAmbiguity(Range{0, 10}, 0, 20, 0), ShouldEqual, 10)
+
+		So(wm.RangedSelectWithAmbiguity(Range{0, 10}, 1, 11, 0), ShouldEqual, 9) // 0b1011 11
+		So(wm.RangedSelectWithAmbiguity(Range{0, 10}, 1, 11, 1), ShouldEqual, 3) // 0b101x 10-11
+		So(wm.RangedSelectWithAmbiguity(Range{0, 10}, 1, 11, 2), ShouldEqual, 1) // 0b10xx 8-11
+		So(wm.RangedSelectWithAmbiguity(Range{0, 10}, 1, 11, 3), ShouldEqual, 1) // 0b1xxx 8-15
+		So(wm.RangedSelectWithAmbiguity(Range{0, 10}, 1, 11, 4), ShouldEqual, 1) // 0b0xxxx 0-15
+		So(wm.RangedSelectWithAmbiguity(Range{0, 10}, 1, 11, 5), ShouldEqual, 1) // 0b0xxxxx 0-31
+
+		So(wm.RangedSelectWithAmbiguity(Range{0, 10}, 2, 11, 0), ShouldEqual, 10)  // 0b1011 11
+		So(wm.RangedSelectWithAmbiguity(Range{0, 10}, 3, 11, 0), ShouldEqual, 10)  // 0b1011 11
+		So(wm.RangedSelectWithAmbiguity(Range{0, 10}, 9, 11, 5), ShouldEqual, 9)   // 0b0xxxxx 0-31
+		So(wm.RangedSelectWithAmbiguity(Range{0, 10}, 10, 11, 5), ShouldEqual, 10) // 0b0xxxxx 0-31
+
+		So(wm.RangedSelectWithAmbiguity(Range{10, 20}, 0, 12, 0), ShouldEqual, 10) // 0b1100 12
+		So(wm.RangedSelectWithAmbiguity(Range{10, 20}, 0, 12, 1), ShouldEqual, 10) // 0b110x 12-13
+		So(wm.RangedSelectWithAmbiguity(Range{10, 20}, 0, 12, 2), ShouldEqual, 10) // 0b11xx 12-16
+		So(wm.RangedSelectWithAmbiguity(Range{10, 20}, 0, 12, 3), ShouldEqual, 10) // 0b1xxx 8-15
+		So(wm.RangedSelectWithAmbiguity(Range{10, 20}, 0, 12, 4), ShouldEqual, 10) // 0b0xxxx 0-15
+		So(wm.RangedSelectWithAmbiguity(Range{10, 20}, 0, 12, 5), ShouldEqual, 10) // 0b0xxxxx 0-31
+	})
+}
+
+// -----------------------------------------------------------------------------
+// Benchmarks
+//
+
 const (
 	// N = 10000000 // 10M 10^7
 	N = 1000000 // 1M 10^6
@@ -225,6 +294,17 @@ func BenchmarkWTRank(b *testing.B) {
 	}
 }
 
+func BenchmarkWTRangedRankWithAmbiguity(b *testing.B) {
+	dim := bf.wt.Dim()
+	wm, _ := bf.wt.(*waveletMatrix)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		ind := uint64(rand.Int63() % N)
+		x := uint64(rand.Int63()) % dim
+		wm.RangedRankWithAmbiguity(Range{0, ind}, x, 0)
+	}
+}
+
 func BenchmarkWTRankLessThan(b *testing.B) {
 	dim := bf.wt.Dim()
 	b.ResetTimer()
@@ -241,6 +321,17 @@ func BenchmarkWTSelect(b *testing.B) {
 		x := bf.vals[uint64(rand.Int63())%uint64(len(bf.vals))]
 		rank := uint64(rand.Int63()) % bf.counter[x]
 		bf.wt.Select(rank, x)
+	}
+}
+
+func BenchmarkWTRangedSelectWithAmbiguity(b *testing.B) {
+	wm, _ := bf.wt.(*waveletMatrix)
+	num := wm.Num()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		x := bf.vals[uint64(rand.Int63())%uint64(len(bf.vals))]
+		rank := uint64(rand.Int63()) % bf.counter[x]
+		wm.RangedSelectWithAmbiguity(Range{0, num}, rank, x, 0)
 	}
 }
 

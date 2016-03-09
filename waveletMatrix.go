@@ -99,8 +99,51 @@ func (wm waveletMatrix) RangedRankRange(ranze Range, valueRange Range) uint64 {
 	return end - beg
 }
 
+func (wm waveletMatrix) rangedRankWithAmbiguityHelper(ranze Range, val uint64, ambiguityBits uint64) Range {
+	for depth := uint64(0); depth+ambiguityBits < wm.blen; depth++ {
+		bit := getMSB(val, depth, wm.blen)
+		rsd := wm.layers[depth]
+		if bit {
+			ranze.Bpos = rsd.ZeroNum() + rsd.Rank(ranze.Bpos, bit)
+			ranze.Epos = rsd.ZeroNum() + rsd.Rank(ranze.Epos, bit)
+		} else {
+			ranze.Bpos = rsd.Rank(ranze.Bpos, bit)
+			ranze.Epos = rsd.Rank(ranze.Epos, bit)
+		}
+	}
+	return ranze
+}
+
+func (wm waveletMatrix) RangedRankWithAmbiguity(ranze Range, val, ambiguityBits uint64) (rank uint64) {
+	r := wm.rangedRankWithAmbiguityHelper(ranze, val, ambiguityBits)
+	return r.Epos - r.Bpos
+}
+
+func (wm waveletMatrix) rangedSelectWithAmbiguityHelper(pos, val, ambiguityBits uint64) uint64 {
+	for depth := ambiguityBits; depth < wm.blen; depth++ {
+		bit := getLSB(val, depth)
+		rsd := wm.layers[wm.blen-depth-1]
+		if bit {
+			pos = rsd.Select(pos-rsd.ZeroNum(), bit)
+		} else {
+			pos = rsd.Select(pos, bit)
+		}
+	}
+	return pos
+}
+
+func (wm waveletMatrix) RangedSelectWithAmbiguity(ranze Range, rank, val, ambiguityBits uint64) uint64 {
+	r := wm.rangedRankWithAmbiguityHelper(ranze, val, ambiguityBits)
+	pos := r.Bpos + rank
+	if r.Epos <= pos {
+		return ranze.Epos
+	}
+	return wm.rangedSelectWithAmbiguityHelper(pos, val, ambiguityBits)
+}
+
 func (wm waveletMatrix) Select(rank uint64, val uint64) uint64 {
 	return wm.selectHelper(rank, val, 0, 0)
+	// return wm.RangedSelectWithAmbiguity(Range{0, wm.Num()}, rank, val, 0)
 }
 
 func (wm waveletMatrix) selectHelper(rank uint64, val uint64, pos uint64, depth uint64) uint64 {
@@ -109,16 +152,25 @@ func (wm waveletMatrix) selectHelper(rank uint64, val uint64, pos uint64, depth 
 	}
 	bit := getMSB(val, depth, wm.blen)
 	rsd := wm.layers[depth]
-	pos = rsd.Rank(pos, bit)
 	if !bit {
+		pos = rsd.Rank(pos, bit)
 		rank = wm.selectHelper(rank, val, pos, depth+1)
-		return rsd.Select(rank, false)
 	} else {
-		zeroNum := rsd.ZeroNum()
-		pos += zeroNum
-		rank = wm.selectHelper(rank, val, pos, depth+1)
-		return rsd.Select(rank-zeroNum, true)
+		pos = rsd.ZeroNum() + rsd.Rank(pos, bit)
+		rank = wm.selectHelper(rank, val, pos, depth+1) - rsd.ZeroNum()
 	}
+	return rsd.Select(rank, bit)
+}
+
+// RangedSelect is a experimental query
+func (wm waveletMatrix) RangedSelect(ranze Range, rank uint64, val uint64) uint64 {
+	return wm.RangedSelectWithAmbiguity(ranze, rank, val, 0)
+	// pos := wm.Select(rank+wm.Rank(ranze.Bpos, val), val)
+	// if pos < ranze.Epos {
+	// 	return pos // Found
+	// } else {
+	// 	return ranze.Epos // Not Found
+	// }
 }
 
 func (wm waveletMatrix) LookupAndRank(pos uint64) (uint64, uint64) {
@@ -259,4 +311,8 @@ func (wm *waveletMatrix) UnmarshalBinary(in []byte) (err error) {
 
 func getMSB(x uint64, pos uint64, blen uint64) bool {
 	return ((x >> (blen - pos - 1)) & 1) == 1
+}
+
+func getLSB(val, depth uint64) bool {
+	return (val & (1 << depth)) != 0
 }
