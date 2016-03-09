@@ -1,3 +1,5 @@
+// Package wavelettree provides a wavelet tree
+// supporting many range-query problems, including rank/select, range min/max query, most frequent and percentile query for general array.
 package wavelettree
 
 import (
@@ -49,7 +51,7 @@ func origIntersect(orig []uint64, ranges []Range, k int) []uint64 {
 	return ret
 }
 
-func buildWaveletHelper(t *testing.T, num uint64, testNum uint64, dim uint64, orig []uint64, ranks, ranksLessThan, ranksMoreThan [][]uint64) WaveletTree {
+func buildWaveletHelper(t *testing.T, num uint64, testNum uint64, dim uint64, orig []uint64, ranks, ranksLessThan, ranksMoreThan [][]uint64) *WaveletMatrix {
 	wmb := NewBuilder()
 	for i := 0; i < len(ranks); i++ {
 		ranks[i] = make([]uint64, num)
@@ -73,7 +75,7 @@ func buildWaveletHelper(t *testing.T, num uint64, testNum uint64, dim uint64, or
 	return wmb.Build()
 }
 
-func testWaveletHelper(t *testing.T, wm WaveletTree, num uint64, testNum uint64, dim uint64, orig []uint64, ranks, ranksLessThan, ranksMoreThan [][]uint64) {
+func testWaveletHelper(t *testing.T, wm *WaveletMatrix, num uint64, testNum uint64, dim uint64, orig []uint64, ranks, ranksLessThan, ranksMoreThan [][]uint64) {
 	So(wm.Num(), ShouldEqual, num)
 	So(wm.Select(num, 0), ShouldEqual, num) // equals num: Not Found
 	for i := uint64(0); i < testNum; i++ {
@@ -177,10 +179,8 @@ func TestSelectExperimental(t *testing.T) {
 	for _, v := range src {
 		builder.PushBack(v)
 	}
-	wt := builder.Build()
-	wm, ok := wt.(*waveletMatrix)
+	wm := builder.Build()
 	Convey("RangedSelect", t, func() {
-		So(ok, ShouldEqual, true)
 		So(wm.RangedSelect(Range{0, 10}, 0, 11), ShouldEqual, 3)
 		So(wm.RangedSelect(Range{0, 10}, 1, 11), ShouldEqual, 9)
 		So(wm.RangedSelect(Range{10, 20}, 0, 13), ShouldEqual, 14)
@@ -243,8 +243,8 @@ const (
 )
 
 type benchFixture struct {
-	builder Builder
-	wt      WaveletTree
+	builder *WaveletMatrixBuilder
+	wt      *WaveletMatrix
 	counter map[uint64]uint64
 	vals    []uint64
 }
@@ -296,12 +296,11 @@ func BenchmarkWTRank(b *testing.B) {
 
 func BenchmarkWTRangedRankWithAmbiguity(b *testing.B) {
 	dim := bf.wt.Dim()
-	wm, _ := bf.wt.(*waveletMatrix)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ind := uint64(rand.Int63() % N)
 		x := uint64(rand.Int63()) % dim
-		wm.RangedRankWithAmbiguity(Range{0, ind}, x, 0)
+		bf.wt.RangedRankWithAmbiguity(Range{0, ind}, x, 0)
 	}
 }
 
@@ -325,13 +324,13 @@ func BenchmarkWTSelect(b *testing.B) {
 }
 
 func BenchmarkWTRangedSelectWithAmbiguity(b *testing.B) {
-	wm, _ := bf.wt.(*waveletMatrix)
+	wm := bf.wt
 	num := wm.Num()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		x := bf.vals[uint64(rand.Int63())%uint64(len(bf.vals))]
 		rank := uint64(rand.Int63()) % bf.counter[x]
-		wm.RangedSelectWithAmbiguity(Range{0, num}, rank, x, 0)
+		bf.wt.RangedSelectWithAmbiguity(Range{0, num}, rank, x, 0)
 	}
 }
 

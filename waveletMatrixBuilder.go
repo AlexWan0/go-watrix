@@ -4,15 +4,24 @@ import (
 	"github.com/hillbig/rsdic"
 )
 
-type waveletMatrixBuilder struct {
+// WaveletMatrixBuilder builds WaveletTree from intergaer array.
+// A user calls PushBack()s followed by Build().
+type WaveletMatrixBuilder struct {
 	vals []uint64
 }
 
-func (wmb *waveletMatrixBuilder) PushBack(val uint64) {
+// NewBuilder returns Builder
+func NewBuilder() *WaveletMatrixBuilder {
+	return &WaveletMatrixBuilder{
+		vals: make([]uint64, 0),
+	}
+}
+
+func (wmb *WaveletMatrixBuilder) PushBack(val uint64) {
 	wmb.vals = append(wmb.vals, val)
 }
 
-func (wmb *waveletMatrixBuilder) Build() WaveletTree {
+func (wmb *WaveletMatrixBuilder) Build() *WaveletMatrix {
 	dim := getDim(wmb.vals)
 	blen := getBinaryLen(dim)
 	zeros := wmb.vals
@@ -28,7 +37,7 @@ func (wmb *waveletMatrixBuilder) Build() WaveletTree {
 		ones = nextOnes
 		layers[depth] = *rsd
 	}
-	return &waveletMatrix{layers, dim, uint64(len(wmb.vals)), blen}
+	return &WaveletMatrix{layers, dim, uint64(len(wmb.vals)), blen}
 }
 
 func filter(vals []uint64, depth uint64, nextZeros *[]uint64, nextOnes *[]uint64, rsd *rsdic.RSDic) {

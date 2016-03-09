@@ -1,7 +1,6 @@
 // Package wavelettree provides a wavelet tree
 // supporting many range-query problems, including rank/select,
 // range min/max query, most frequent and percentile query for general array.
-
 package wavelettree
 
 import (
@@ -9,30 +8,51 @@ import (
 	"github.com/ugorji/go/codec"
 )
 
-func New() WaveletTree {
-	return &waveletMatrix{
+// Range represents a range [Bpos, Epos)
+// only valid for Bpos <= Epos
+type Range struct {
+	Bpos uint64
+	Epos uint64
+}
+
+const (
+	// OpEqual is used in RangedRankOp()
+	OpEqual = iota
+	// OpLessThan is used in RangedRankOp()
+	OpLessThan
+	// OpEOpMoreThanqual is used in RangedRankOp()
+	OpMoreThan
+	// OpMax is upper boundary for OpXXXX constants
+	OpMax
+)
+
+func New() *WaveletMatrix {
+	return &WaveletMatrix{
 		layers: make([]rsdic.RSDic, 0),
 		dim:    0,
 		num:    0,
 		blen:   0}
 }
 
-type waveletMatrix struct {
+type WaveletMatrix struct {
 	layers []rsdic.RSDic
 	dim    uint64
 	num    uint64
 	blen   uint64 // =len(layers)
 }
 
-func (wm waveletMatrix) Num() uint64 {
+// Num return the number of values in T
+func (wm WaveletMatrix) Num() uint64 {
 	return wm.num
 }
 
-func (wm waveletMatrix) Dim() uint64 {
+// Dim returns (max. of T[0...Num) + 1)
+func (wm WaveletMatrix) Dim() uint64 {
 	return wm.dim
 }
 
-func (wm waveletMatrix) Lookup(pos uint64) uint64 {
+// Lookup returns T[pos]
+func (wm WaveletMatrix) Lookup(pos uint64) uint64 {
 	val := uint64(0)
 	for depth := 0; depth < len(wm.layers); depth++ {
 		val <<= 1
@@ -47,21 +67,27 @@ func (wm waveletMatrix) Lookup(pos uint64) uint64 {
 	return val
 }
 
-func (wm waveletMatrix) Rank(pos uint64, val uint64) uint64 {
+// Rank returns the number of c (== val) in T[0...pos)
+func (wm WaveletMatrix) Rank(pos uint64, val uint64) uint64 {
 	return wm.RangedRankOp(Range{0, pos}, val, OpEqual) // Works but disabled for now to keep test cov.
 	// ranze := wm.RankRange(Range{0, pos}, val)
 	// return ranze.Epos - ranze.Bpos
 }
 
-func (wm waveletMatrix) RankLessThan(pos uint64, val uint64) (rankLessThan uint64) {
+// RankLessTahn returns the number of c (< val) in T[0...pos)
+func (wm WaveletMatrix) RankLessThan(pos uint64, val uint64) (rankLessThan uint64) {
 	return wm.RangedRankOp(Range{0, pos}, val, OpLessThan)
 }
 
-func (wm waveletMatrix) RankMoreThan(pos uint64, val uint64) (rankLessThan uint64) {
+// RankMoreThan returns the number of c (> val) in T[0...pos)
+func (wm WaveletMatrix) RankMoreThan(pos uint64, val uint64) (rankLessThan uint64) {
 	return wm.RangedRankOp(Range{0, pos}, val, OpMoreThan)
 }
 
-func (wm waveletMatrix) RangedRankOp(ranze Range, val uint64, op int) uint64 {
+// RangedRankOp returns the number of c that satisfies 'c <op> val'
+// in T[ranze.Bpos, ranze.Epos)
+// op should be one of {OpEaual, OpLessThan, OpMoreThan}.
+func (wm WaveletMatrix) RangedRankOp(ranze Range, val uint64, op int) uint64 {
 	rankLessThan := uint64(0)
 	rankMoreThan := uint64(0)
 	for depth := uint64(0); depth < wm.blen; depth++ {
@@ -93,13 +119,16 @@ func (wm waveletMatrix) RangedRankOp(ranze Range, val uint64, op int) uint64 {
 	}
 }
 
-func (wm waveletMatrix) RangedRankRange(ranze Range, valueRange Range) uint64 {
+// RangedRankRange returns the number of c that falls within valueRange
+// i.e. [valueRange.Bpos, valueRange.Epos)
+// in T[ranze.Bpos, ranze.Epos)
+func (wm WaveletMatrix) RangedRankRange(ranze Range, valueRange Range) uint64 {
 	end := wm.RangedRankOp(ranze, valueRange.Epos, OpLessThan)
 	beg := wm.RangedRankOp(ranze, valueRange.Bpos, OpLessThan)
 	return end - beg
 }
 
-func (wm waveletMatrix) rangedRankWithAmbiguityHelper(ranze Range, val uint64, ambiguityBits uint64) Range {
+func (wm WaveletMatrix) rangedRankWithAmbiguityHelper(ranze Range, val uint64, ambiguityBits uint64) Range {
 	for depth := uint64(0); depth+ambiguityBits < wm.blen; depth++ {
 		bit := getMSB(val, depth, wm.blen)
 		rsd := wm.layers[depth]
@@ -114,12 +143,12 @@ func (wm waveletMatrix) rangedRankWithAmbiguityHelper(ranze Range, val uint64, a
 	return ranze
 }
 
-func (wm waveletMatrix) RangedRankWithAmbiguity(ranze Range, val, ambiguityBits uint64) (rank uint64) {
+func (wm WaveletMatrix) RangedRankWithAmbiguity(ranze Range, val, ambiguityBits uint64) (rank uint64) {
 	r := wm.rangedRankWithAmbiguityHelper(ranze, val, ambiguityBits)
 	return r.Epos - r.Bpos
 }
 
-func (wm waveletMatrix) rangedSelectWithAmbiguityHelper(pos, val, ambiguityBits uint64) uint64 {
+func (wm WaveletMatrix) rangedSelectWithAmbiguityHelper(pos, val, ambiguityBits uint64) uint64 {
 	for depth := ambiguityBits; depth < wm.blen; depth++ {
 		bit := getLSB(val, depth)
 		rsd := wm.layers[wm.blen-depth-1]
@@ -132,7 +161,7 @@ func (wm waveletMatrix) rangedSelectWithAmbiguityHelper(pos, val, ambiguityBits 
 	return pos
 }
 
-func (wm waveletMatrix) RangedSelectWithAmbiguity(ranze Range, rank, val, ambiguityBits uint64) uint64 {
+func (wm WaveletMatrix) RangedSelectWithAmbiguity(ranze Range, rank, val, ambiguityBits uint64) uint64 {
 	r := wm.rangedRankWithAmbiguityHelper(ranze, val, ambiguityBits)
 	pos := r.Bpos + rank
 	if r.Epos <= pos {
@@ -141,12 +170,14 @@ func (wm waveletMatrix) RangedSelectWithAmbiguity(ranze Range, rank, val, ambigu
 	return wm.rangedSelectWithAmbiguityHelper(pos, val, ambiguityBits)
 }
 
-func (wm waveletMatrix) Select(rank uint64, val uint64) uint64 {
+// Select returns the position of (rank+1)-th val in T
+// If not found, returns Num().
+func (wm WaveletMatrix) Select(rank uint64, val uint64) uint64 {
 	return wm.selectHelper(rank, val, 0, 0)
 	// return wm.RangedSelectWithAmbiguity(Range{0, wm.Num()}, rank, val, 0)
 }
 
-func (wm waveletMatrix) selectHelper(rank uint64, val uint64, pos uint64, depth uint64) uint64 {
+func (wm WaveletMatrix) selectHelper(rank uint64, val uint64, pos uint64, depth uint64) uint64 {
 	if depth == wm.blen {
 		return pos + rank
 	}
@@ -163,7 +194,7 @@ func (wm waveletMatrix) selectHelper(rank uint64, val uint64, pos uint64, depth 
 }
 
 // RangedSelect is a experimental query
-func (wm waveletMatrix) RangedSelect(ranze Range, rank uint64, val uint64) uint64 {
+func (wm WaveletMatrix) RangedSelect(ranze Range, rank uint64, val uint64) uint64 {
 	return wm.RangedSelectWithAmbiguity(ranze, rank, val, 0)
 	// pos := wm.Select(rank+wm.Rank(ranze.Bpos, val), val)
 	// if pos < ranze.Epos {
@@ -173,7 +204,9 @@ func (wm waveletMatrix) RangedSelect(ranze Range, rank uint64, val uint64) uint6
 	// }
 }
 
-func (wm waveletMatrix) LookupAndRank(pos uint64) (uint64, uint64) {
+// LookupAndRank returns T[pos] and Rank(pos, T[pos])
+// Faster than Lookup and Rank
+func (wm WaveletMatrix) LookupAndRank(pos uint64) (uint64, uint64) {
 	val := uint64(0)
 	bpos := uint64(0)
 	epos := uint64(pos)
@@ -192,7 +225,8 @@ func (wm waveletMatrix) LookupAndRank(pos uint64) (uint64, uint64) {
 	return val, epos - bpos
 }
 
-func (wm waveletMatrix) Quantile(ranze Range, k uint64) uint64 {
+// Quantile returns (k+1)th smallest value in T[ranze.Bpos, ranze.Epos]
+func (wm WaveletMatrix) Quantile(ranze Range, k uint64) uint64 {
 	val := uint64(0)
 	bpos, epos := ranze.Bpos, ranze.Epos
 	for depth := 0; depth < len(wm.layers); depth++ {
@@ -214,11 +248,12 @@ func (wm waveletMatrix) Quantile(ranze Range, k uint64) uint64 {
 	return val
 }
 
-func (wm waveletMatrix) Intersect(ranges []Range, k int) []uint64 {
+// Intersect returns values that occure at least k ranges
+func (wm WaveletMatrix) Intersect(ranges []Range, k int) []uint64 {
 	return wm.intersectHelper(ranges, k, 0, 0)
 }
 
-func (wm waveletMatrix) intersectHelper(ranges []Range, k int, depth uint64, prefix uint64) []uint64 {
+func (wm WaveletMatrix) intersectHelper(ranges []Range, k int, depth uint64, prefix uint64) []uint64 {
 	if depth == wm.blen {
 		ret := make([]uint64, 1)
 		ret[0] = prefix
@@ -250,7 +285,8 @@ func (wm waveletMatrix) intersectHelper(ranges []Range, k int, depth uint64, pre
 	return ret
 }
 
-func (wm waveletMatrix) MarshalBinary() (out []byte, err error) {
+// MarshalBinary encodes WaveletTree into a binary form and returns the result.
+func (wm WaveletMatrix) MarshalBinary() (out []byte, err error) {
 	var bh codec.MsgpackHandle
 	enc := codec.NewEncoderBytes(&out, &bh)
 	err = enc.Encode(len(wm.layers))
@@ -278,7 +314,8 @@ func (wm waveletMatrix) MarshalBinary() (out []byte, err error) {
 	return
 }
 
-func (wm *waveletMatrix) UnmarshalBinary(in []byte) (err error) {
+// UnmarshalBinary decodes WaveletTree from a binary form generated MarshalBinary
+func (wm *WaveletMatrix) UnmarshalBinary(in []byte) (err error) {
 	var bh codec.MsgpackHandle
 	dec := codec.NewDecoderBytes(in, &bh)
 	layerNum := 0
