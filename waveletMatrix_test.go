@@ -236,8 +236,8 @@ func TestSelectExperimental(t *testing.T) {
 //
 
 const (
-	// N = 10000000 // 10M 10^7
-	N = 1000000 // 1M 10^6
+	N = 10000000 // 10M 10^7
+	// N = 1000000 // 1M 10^6
 	// N = 1 << 20 // 1 Mi * 64 bit = 8 MiB
 )
 
@@ -271,11 +271,11 @@ func initBenchFixture(b *testing.B) {
 	fmt.Printf("{N = %v is used in the tests below}\n\t\t\t\t", N)
 }
 
-func BenchmarkWTBuild(b *testing.B) {
+func BenchmarkWM_Build(b *testing.B) {
 	initBenchFixture(b)
 }
 
-func BenchmarkWTLookup(b *testing.B) {
+func BenchmarkWM_Lookup(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ind := uint64(rand.Int63() % N)
@@ -283,7 +283,7 @@ func BenchmarkWTLookup(b *testing.B) {
 	}
 }
 
-func BenchmarkWTRank(b *testing.B) {
+func BenchmarkWM_Rank(b *testing.B) {
 	dim := bf.wt.Dim()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -293,7 +293,7 @@ func BenchmarkWTRank(b *testing.B) {
 	}
 }
 
-func BenchmarkWTRangedRankIgnoreLSBs(b *testing.B) {
+func BenchmarkWM_RangedRankIgnoreLSBs(b *testing.B) {
 	dim := bf.wt.Dim()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -303,7 +303,7 @@ func BenchmarkWTRangedRankIgnoreLSBs(b *testing.B) {
 	}
 }
 
-func BenchmarkWTRankLessThan(b *testing.B) {
+func BenchmarkWM_RankLessThan(b *testing.B) {
 	dim := bf.wt.Dim()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -313,7 +313,7 @@ func BenchmarkWTRankLessThan(b *testing.B) {
 	}
 }
 
-func BenchmarkWTSelect(b *testing.B) {
+func BenchmarkWM_Select(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		x := bf.vals[uint64(rand.Int63())%uint64(len(bf.vals))]
@@ -322,7 +322,7 @@ func BenchmarkWTSelect(b *testing.B) {
 	}
 }
 
-func BenchmarkWTRangedSelectIgnoreLSBs(b *testing.B) {
+func BenchmarkWM_RangedSelectIgnoreLSBs(b *testing.B) {
 	wm := bf.wt
 	num := wm.Num()
 	b.ResetTimer()
@@ -333,7 +333,7 @@ func BenchmarkWTRangedSelectIgnoreLSBs(b *testing.B) {
 	}
 }
 
-func BenchmarkWTQuantile(b *testing.B) {
+func BenchmarkWM_Quantile(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ranze := generateRange(N)
@@ -345,7 +345,7 @@ func BenchmarkWTQuantile(b *testing.B) {
 	}
 }
 
-func BenchmarkRawLookup(b *testing.B) {
+func BenchmarkRaw_Lookup(b *testing.B) {
 	b.ResetTimer()
 	dummy := uint64(0)
 	for i := 0; i < b.N; i++ {
@@ -354,7 +354,7 @@ func BenchmarkRawLookup(b *testing.B) {
 	}
 }
 
-func BenchmarkRawRank(b *testing.B) {
+func BenchmarkRaw_Rank(b *testing.B) {
 	vs := make([]uint64, N)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -369,7 +369,7 @@ func BenchmarkRawRank(b *testing.B) {
 	}
 }
 
-func BenchmarkRawSelect(b *testing.B) {
+func BenchmarkRaw_Select(b *testing.B) {
 	// vs := make([]uint64, N)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -386,7 +386,7 @@ func BenchmarkRawSelect(b *testing.B) {
 	}
 }
 
-func BenchmarkRawQuantile(b *testing.B) {
+func BenchmarkRaw_Quantile(b *testing.B) {
 	vs := make([]int, N)
 	b.ResetTimer()
 	dummy := 0
