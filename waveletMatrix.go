@@ -20,20 +20,21 @@ const (
 	OpEqual = iota
 	// OpLessThan is used in RangedRankOp()
 	OpLessThan
-	// OpEOpMoreThanqual is used in RangedRankOp()
+	// OpMoreThan is used in RangedRankOp()
 	OpMoreThan
 	// OpMax is upper boundary for OpXXXX constants
 	OpMax
 )
 
-func New() *WaveletMatrix {
-	return &WaveletMatrix{
-		layers: make([]rsdic.RSDic, 0),
-		dim:    0,
-		num:    0,
-		blen:   0}
-}
+// func New() *WaveletMatrix {
+// 	return &WaveletMatrix{
+// 		layers: make([]rsdic.RSDic, 0),
+// 		dim:    0,
+// 		num:    0,
+// 		blen:   0}
+// }
 
+// WaveletMatrix
 type WaveletMatrix struct {
 	layers []rsdic.RSDic
 	dim    uint64
@@ -74,7 +75,7 @@ func (wm WaveletMatrix) Rank(pos uint64, val uint64) uint64 {
 	// return ranze.Epos - ranze.Bpos
 }
 
-// RankLessTahn returns the number of c (< val) in T[0...pos)
+// RankLessThan returns the number of c (< val) in T[0...pos)
 func (wm WaveletMatrix) RankLessThan(pos uint64, val uint64) (rankLessThan uint64) {
 	return wm.RangedRankOp(Range{0, pos}, val, OpLessThan)
 }
@@ -128,8 +129,8 @@ func (wm WaveletMatrix) RangedRankRange(ranze Range, valueRange Range) uint64 {
 	return end - beg
 }
 
-func (wm WaveletMatrix) rangedRankWithAmbiguityHelper(ranze Range, val uint64, ambiguityBits uint64) Range {
-	for depth := uint64(0); depth+ambiguityBits < wm.blen; depth++ {
+func (wm WaveletMatrix) rangedRankIgnoreLDBsHelper(ranze Range, val uint64, ignoreBits uint64) Range {
+	for depth := uint64(0); depth+ignoreBits < wm.blen; depth++ {
 		bit := getMSB(val, depth, wm.blen)
 		rsd := wm.layers[depth]
 		if bit {
@@ -143,13 +144,13 @@ func (wm WaveletMatrix) rangedRankWithAmbiguityHelper(ranze Range, val uint64, a
 	return ranze
 }
 
-func (wm WaveletMatrix) RangedRankWithAmbiguity(ranze Range, val, ambiguityBits uint64) (rank uint64) {
-	r := wm.rangedRankWithAmbiguityHelper(ranze, val, ambiguityBits)
+func (wm WaveletMatrix) RangedRankIgnoreLDBs(ranze Range, val, ignoreBits uint64) (rank uint64) {
+	r := wm.rangedRankIgnoreLDBsHelper(ranze, val, ignoreBits)
 	return r.Epos - r.Bpos
 }
 
-func (wm WaveletMatrix) rangedSelectWithAmbiguityHelper(pos, val, ambiguityBits uint64) uint64 {
-	for depth := ambiguityBits; depth < wm.blen; depth++ {
+func (wm WaveletMatrix) rangedSelectIgnoreLDBsHelper(pos, val, ignoreBits uint64) uint64 {
+	for depth := ignoreBits; depth < wm.blen; depth++ {
 		bit := getLSB(val, depth)
 		rsd := wm.layers[wm.blen-depth-1]
 		if bit {
@@ -161,20 +162,20 @@ func (wm WaveletMatrix) rangedSelectWithAmbiguityHelper(pos, val, ambiguityBits 
 	return pos
 }
 
-func (wm WaveletMatrix) RangedSelectWithAmbiguity(ranze Range, rank, val, ambiguityBits uint64) uint64 {
-	r := wm.rangedRankWithAmbiguityHelper(ranze, val, ambiguityBits)
+func (wm WaveletMatrix) RangedSelectIgnoreLDBs(ranze Range, rank, val, ignoreBits uint64) uint64 {
+	r := wm.rangedRankIgnoreLDBsHelper(ranze, val, ignoreBits)
 	pos := r.Bpos + rank
 	if r.Epos <= pos {
 		return ranze.Epos
 	}
-	return wm.rangedSelectWithAmbiguityHelper(pos, val, ambiguityBits)
+	return wm.rangedSelectIgnoreLDBsHelper(pos, val, ignoreBits)
 }
 
 // Select returns the position of (rank+1)-th val in T
 // If not found, returns Num().
 func (wm WaveletMatrix) Select(rank uint64, val uint64) uint64 {
 	return wm.selectHelper(rank, val, 0, 0)
-	// return wm.RangedSelectWithAmbiguity(Range{0, wm.Num()}, rank, val, 0)
+	// return wm.RangedSelectIgnoreLDBs(Range{0, wm.Num()}, rank, val, 0)
 }
 
 func (wm WaveletMatrix) selectHelper(rank uint64, val uint64, pos uint64, depth uint64) uint64 {
@@ -195,7 +196,7 @@ func (wm WaveletMatrix) selectHelper(rank uint64, val uint64, pos uint64, depth 
 
 // RangedSelect is a experimental query
 func (wm WaveletMatrix) RangedSelect(ranze Range, rank uint64, val uint64) uint64 {
-	return wm.RangedSelectWithAmbiguity(ranze, rank, val, 0)
+	return wm.RangedSelectIgnoreLDBs(ranze, rank, val, 0)
 	// pos := wm.Select(rank+wm.Rank(ranze.Bpos, val), val)
 	// if pos < ranze.Epos {
 	// 	return pos // Found
