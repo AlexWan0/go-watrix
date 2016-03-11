@@ -1,6 +1,10 @@
 wavelettree
 ============
 
+Caution
+-------
+Currently, the API is unstable because I'm experimenting various queries.
+
 [![Build Status](https://travis-ci.org/sekineh/waveletTree.svg?branch=master)](https://travis-ci.org/sekineh/waveletTree)
 
 waveletTree is a Go package for myriad array operations using wavelet trees.
@@ -13,25 +17,46 @@ at most (n * log_2 s) bits plus small overheads for storing auxiually indices.
 Usage
 =====
 
-	import "github.com/hillbig/waveletTree"
+[![GoDoc](https://godoc.org/github.com/sekineh/waveletTree?status.svg)](https://godoc.org/github.com/sekineh/waveletTree)
 
-	builder := NewBuilder()
-	for i := uint64(0); i < N; i++ {
-		builder.PushBack(uint64(rand.Int63())) // set values by PushBck
-	}
-	wt := builder.Build() // Build returns WaveletTree
-
-	// WaveletTree conceptually stores a non-negative integer array V[0...num)
-	// where 0 <= V[i] < s
-
-	// WaveletTree supports all operations in O(log s) time (not depend on num)
-	x := wt.Lookup(ind) // Lookup returns V[x]
-	rank := wt.Rank(ind, x) // Rank returns the number of xs in V[0...in)
-	sel := wt.Select(rank, x) // Select returns the position of (rank+1)-th x in V
-	v := wt.Quantile(Range{beg, end}, k) // Quantile returns k-th largest value in V[beg, end)
+See godoc for reference.  It was originally folked from github.com/hillbig/WaveletTree,  
+but compatibility is not maintained.
 
 Benchmark
 =========
+
+New
+---
+- 2.8 GHz Xeon [in AWS]
+- 32 cores (only a single thread is used)
+
+Note: IgnoreLSBs version performs quite well.
+
+	go test -v -bench . -benchmem
+
+	{N = 10000000 is used in the tests below}   
+
+	BenchmarkWM_Build-2    						1	11816507411 ns/op	10731534600 B/op	    7925 allocs/op
+
+	BenchmarkWM_Lookup-2                	   50000	     24509 ns/op	       0 B/op	       0 allocs/op
+	BenchmarkWM_Rank-2                  	   50000	     27384 ns/op	       0 B/op	       0 allocs/op
+	BenchmarkWM_RangedRankIgnoreLSBs-2  	  100000	     22119 ns/op	       0 B/op	       0 allocs/op
+	BenchmarkWM_RankLessThan-2          	   50000	     26901 ns/op	       0 B/op	       0 allocs/op
+
+	BenchmarkWM_Select-2                	   30000	     43022 ns/op	       0 B/op	       0 allocs/op
+	BenchmarkWM_RangedSelectIgnoreLSBs-2	   30000	     47325 ns/op	       0 B/op	       0 allocs/op
+
+	BenchmarkWM_Quantile-2              	   50000	     23663 ns/op	       0 B/op	       0 allocs/op
+
+	BenchmarkRaw_Lookup-2               	20000000	       124 ns/op	       0 B/op	       0 allocs/op
+
+	BenchmarkRaw_Rank-2                 	     200	   5494451 ns/op	       0 B/op	       0 allocs/op
+	BenchmarkRaw_Select-2               	     100	  17108476 ns/op	       0 B/op	       0 allocs/op
+	BenchmarkRaw_Quantile-2             	      50	  20772400 ns/op	      32 B/op	       1 allocs/op
+
+
+Old
+---
 
 - 1.7 GHz Intel Core i7
 - OS X 10.9.2
@@ -56,6 +81,7 @@ The results shows that RSDic operations require always
 
 	// An array []uint64 of length 10M (10^7) for comparison
 	BenchmarkRawLookup10M	20000000	       109 ns/op
-	BenchmarkRawRank10M	     500	   4683822 ns/op
+	BenchmarkRa
+	wRank10M	     500	   4683822 ns/op
 	BenchmarkRawSelect10M	     500	   6085992 ns/op
 	BenchmarkRawQuantile10M	     100	  44362885 ns/op

@@ -120,9 +120,9 @@ func (wm *WaveletMatrix) RangedRankOp(ranze Range, val uint64, op int) uint64 {
 	}
 }
 
-// RangedRankRange returns the number of c that falls within valueRange
-// i.e. [valueRange.Bpos, valueRange.Epos)
-// in T[ranze.Bpos, ranze.Epos)
+// RangedRankRange searches T[ranze.Bpos, ranze.Epos) and
+// returns the number of c that falls within valueRange
+// i.e. [valueRange.Bpos, valueRange.Epos).
 func (wm *WaveletMatrix) RangedRankRange(ranze Range, valueRange Range) uint64 {
 	end := wm.RangedRankOp(ranze, valueRange.Epos, OpLessThan)
 	beg := wm.RangedRankOp(ranze, valueRange.Bpos, OpLessThan)
@@ -144,6 +144,11 @@ func (wm *WaveletMatrix) rangedRankIgnoreLSBsHelper(ranze Range, val uint64, ign
 	return ranze
 }
 
+// RangedRankIgnoreLSBs searches T[ranze.Bpos, ranze.Epos) and
+// returns the number of c that matches the val.
+// If ignoreBits > 0, <ignoreBits>-bit portion from LSB are not considered.
+// This behavior is useful for IP address prefix search such as 192.168.10.0/24
+// (ignoreBits is 8 in this case).
 func (wm *WaveletMatrix) RangedRankIgnoreLSBs(ranze Range, val, ignoreBits uint64) (rank uint64) {
 	r := wm.rangedRankIgnoreLSBsHelper(ranze, val, ignoreBits)
 	return r.Epos - r.Bpos
@@ -162,6 +167,11 @@ func (wm *WaveletMatrix) rangedSelectIgnoreLSBsHelper(pos, val, ignoreBits uint6
 	return pos
 }
 
+// RangedSelectIgnoreLSBs searches T[ranze.Bpos, ranze.Epos) and
+// returns the position of (rank+1)'th c that matches the val.
+// If ignoreBits > 0, <ignoreBits>-bit portion from LSB are not considered.
+// This behavior is useful for IP address prefix search such as 192.168.10.0/24
+// (ignoreBits is 8 in this case).
 func (wm *WaveletMatrix) RangedSelectIgnoreLSBs(ranze Range, rank, val, ignoreBits uint64) uint64 {
 	r := wm.rangedRankIgnoreLSBsHelper(ranze, val, ignoreBits)
 	pos := r.Bpos + rank
