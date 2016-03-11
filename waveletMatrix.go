@@ -129,7 +129,7 @@ func (wm WaveletMatrix) RangedRankRange(ranze Range, valueRange Range) uint64 {
 	return end - beg
 }
 
-func (wm WaveletMatrix) rangedRankIgnoreLDBsHelper(ranze Range, val uint64, ignoreBits uint64) Range {
+func (wm WaveletMatrix) rangedRankIgnoreLSBsHelper(ranze Range, val uint64, ignoreBits uint64) Range {
 	for depth := uint64(0); depth+ignoreBits < wm.blen; depth++ {
 		bit := getMSB(val, depth, wm.blen)
 		rsd := wm.layers[depth]
@@ -144,12 +144,12 @@ func (wm WaveletMatrix) rangedRankIgnoreLDBsHelper(ranze Range, val uint64, igno
 	return ranze
 }
 
-func (wm WaveletMatrix) RangedRankIgnoreLDBs(ranze Range, val, ignoreBits uint64) (rank uint64) {
-	r := wm.rangedRankIgnoreLDBsHelper(ranze, val, ignoreBits)
+func (wm WaveletMatrix) RangedRankIgnoreLSBs(ranze Range, val, ignoreBits uint64) (rank uint64) {
+	r := wm.rangedRankIgnoreLSBsHelper(ranze, val, ignoreBits)
 	return r.Epos - r.Bpos
 }
 
-func (wm WaveletMatrix) rangedSelectIgnoreLDBsHelper(pos, val, ignoreBits uint64) uint64 {
+func (wm WaveletMatrix) rangedSelectIgnoreLSBsHelper(pos, val, ignoreBits uint64) uint64 {
 	for depth := ignoreBits; depth < wm.blen; depth++ {
 		bit := getLSB(val, depth)
 		rsd := wm.layers[wm.blen-depth-1]
@@ -162,20 +162,20 @@ func (wm WaveletMatrix) rangedSelectIgnoreLDBsHelper(pos, val, ignoreBits uint64
 	return pos
 }
 
-func (wm WaveletMatrix) RangedSelectIgnoreLDBs(ranze Range, rank, val, ignoreBits uint64) uint64 {
-	r := wm.rangedRankIgnoreLDBsHelper(ranze, val, ignoreBits)
+func (wm WaveletMatrix) RangedSelectIgnoreLSBs(ranze Range, rank, val, ignoreBits uint64) uint64 {
+	r := wm.rangedRankIgnoreLSBsHelper(ranze, val, ignoreBits)
 	pos := r.Bpos + rank
 	if r.Epos <= pos {
 		return ranze.Epos
 	}
-	return wm.rangedSelectIgnoreLDBsHelper(pos, val, ignoreBits)
+	return wm.rangedSelectIgnoreLSBsHelper(pos, val, ignoreBits)
 }
 
 // Select returns the position of (rank+1)-th val in T
 // If not found, returns Num().
 func (wm WaveletMatrix) Select(rank uint64, val uint64) uint64 {
 	return wm.selectHelper(rank, val, 0, 0)
-	// return wm.RangedSelectIgnoreLDBs(Range{0, wm.Num()}, rank, val, 0)
+	// return wm.RangedSelectIgnoreLSBs(Range{0, wm.Num()}, rank, val, 0)
 }
 
 func (wm WaveletMatrix) selectHelper(rank uint64, val uint64, pos uint64, depth uint64) uint64 {
@@ -196,7 +196,7 @@ func (wm WaveletMatrix) selectHelper(rank uint64, val uint64, pos uint64, depth 
 
 // RangedSelect is a experimental query
 func (wm WaveletMatrix) RangedSelect(ranze Range, rank uint64, val uint64) uint64 {
-	return wm.RangedSelectIgnoreLDBs(ranze, rank, val, 0)
+	return wm.RangedSelectIgnoreLSBs(ranze, rank, val, 0)
 	// pos := wm.Select(rank+wm.Rank(ranze.Bpos, val), val)
 	// if pos < ranze.Epos {
 	// 	return pos // Found

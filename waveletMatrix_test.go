@@ -185,49 +185,49 @@ func TestSelectExperimental(t *testing.T) {
 		So(wm.RangedSelect(Range{10, 20}, 0, 13), ShouldEqual, 14)
 		So(wm.RangedSelect(Range{10, 20}, 1, 13), ShouldEqual, 20)
 	})
-	Convey("RangedRankIgnoreLDBs", t, func() {
-		So(wm.RangedRankIgnoreLDBs(Range{0, 10}, 11, 0), ShouldEqual, 2)
-		So(wm.RangedRankIgnoreLDBs(Range{0, 10}, 11, 1), ShouldEqual, 4)
-		So(wm.RangedRankIgnoreLDBs(Range{0, 10}, 11, 2), ShouldEqual, 8)
-		So(wm.RangedRankIgnoreLDBs(Range{0, 10}, 11, 3), ShouldEqual, 9)
-		So(wm.RangedRankIgnoreLDBs(Range{0, 10}, 11, 4), ShouldEqual, 9)
-		So(wm.RangedRankIgnoreLDBs(Range{0, 10}, 11, 5), ShouldEqual, 10)
+	Convey("RangedRankIgnoreLSBs", t, func() {
+		So(wm.RangedRankIgnoreLSBs(Range{0, 10}, 11, 0), ShouldEqual, 2)
+		So(wm.RangedRankIgnoreLSBs(Range{0, 10}, 11, 1), ShouldEqual, 4)
+		So(wm.RangedRankIgnoreLSBs(Range{0, 10}, 11, 2), ShouldEqual, 8)
+		So(wm.RangedRankIgnoreLSBs(Range{0, 10}, 11, 3), ShouldEqual, 9)
+		So(wm.RangedRankIgnoreLSBs(Range{0, 10}, 11, 4), ShouldEqual, 9)
+		So(wm.RangedRankIgnoreLSBs(Range{0, 10}, 11, 5), ShouldEqual, 10)
 
-		So(wm.RangedRankIgnoreLDBs(Range{10, 20}, 12, 0), ShouldEqual, 1)  // 0b1100 12
-		So(wm.RangedRankIgnoreLDBs(Range{10, 20}, 12, 1), ShouldEqual, 2)  // 0b110x 12-13
-		So(wm.RangedRankIgnoreLDBs(Range{10, 20}, 12, 2), ShouldEqual, 4)  // 0b11xx 12-16
-		So(wm.RangedRankIgnoreLDBs(Range{10, 20}, 12, 3), ShouldEqual, 4)  // 0b1xxx 8-15
-		So(wm.RangedRankIgnoreLDBs(Range{10, 20}, 12, 4), ShouldEqual, 7)  // 0b0xxxx 0-15
-		So(wm.RangedRankIgnoreLDBs(Range{10, 20}, 12, 5), ShouldEqual, 10) // 0b0xxxxx 0-31
+		So(wm.RangedRankIgnoreLSBs(Range{10, 20}, 12, 0), ShouldEqual, 1)  // 0b1100 12
+		So(wm.RangedRankIgnoreLSBs(Range{10, 20}, 12, 1), ShouldEqual, 2)  // 0b110x 12-13
+		So(wm.RangedRankIgnoreLSBs(Range{10, 20}, 12, 2), ShouldEqual, 4)  // 0b11xx 12-16
+		So(wm.RangedRankIgnoreLSBs(Range{10, 20}, 12, 3), ShouldEqual, 4)  // 0b1xxx 8-15
+		So(wm.RangedRankIgnoreLSBs(Range{10, 20}, 12, 4), ShouldEqual, 7)  // 0b0xxxx 0-15
+		So(wm.RangedRankIgnoreLSBs(Range{10, 20}, 12, 5), ShouldEqual, 10) // 0b0xxxxx 0-31
 	})
-	Convey("RangedSelectIgnoreLDBs", t, func() {
-		So(wm.RangedSelectIgnoreLDBs(Range{0, 10}, 0, 11, 0), ShouldEqual, 3) // 0b1011 11
-		So(wm.RangedSelectIgnoreLDBs(Range{0, 10}, 0, 11, 1), ShouldEqual, 2) // 0b101x 10-11
-		So(wm.RangedSelectIgnoreLDBs(Range{0, 10}, 0, 11, 2), ShouldEqual, 0) // 0b10xx 8-11
-		So(wm.RangedSelectIgnoreLDBs(Range{0, 10}, 0, 11, 3), ShouldEqual, 0) // 0b1xxx 8-15
-		So(wm.RangedSelectIgnoreLDBs(Range{0, 10}, 0, 11, 4), ShouldEqual, 0) // 0b0xxxx 0-15
-		So(wm.RangedSelectIgnoreLDBs(Range{0, 10}, 0, 11, 5), ShouldEqual, 0) // 0b0xxxxx 0-31
+	Convey("RangedSelectIgnoreLSBs", t, func() {
+		So(wm.RangedSelectIgnoreLSBs(Range{0, 10}, 0, 11, 0), ShouldEqual, 3) // 0b1011 11
+		So(wm.RangedSelectIgnoreLSBs(Range{0, 10}, 0, 11, 1), ShouldEqual, 2) // 0b101x 10-11
+		So(wm.RangedSelectIgnoreLSBs(Range{0, 10}, 0, 11, 2), ShouldEqual, 0) // 0b10xx 8-11
+		So(wm.RangedSelectIgnoreLSBs(Range{0, 10}, 0, 11, 3), ShouldEqual, 0) // 0b1xxx 8-15
+		So(wm.RangedSelectIgnoreLSBs(Range{0, 10}, 0, 11, 4), ShouldEqual, 0) // 0b0xxxx 0-15
+		So(wm.RangedSelectIgnoreLSBs(Range{0, 10}, 0, 11, 5), ShouldEqual, 0) // 0b0xxxxx 0-31
 
-		So(wm.RangedSelectIgnoreLDBs(Range{0, 10}, 0, 20, 0), ShouldEqual, 10)
+		So(wm.RangedSelectIgnoreLSBs(Range{0, 10}, 0, 20, 0), ShouldEqual, 10)
 
-		So(wm.RangedSelectIgnoreLDBs(Range{0, 10}, 1, 11, 0), ShouldEqual, 9) // 0b1011 11
-		So(wm.RangedSelectIgnoreLDBs(Range{0, 10}, 1, 11, 1), ShouldEqual, 3) // 0b101x 10-11
-		So(wm.RangedSelectIgnoreLDBs(Range{0, 10}, 1, 11, 2), ShouldEqual, 1) // 0b10xx 8-11
-		So(wm.RangedSelectIgnoreLDBs(Range{0, 10}, 1, 11, 3), ShouldEqual, 1) // 0b1xxx 8-15
-		So(wm.RangedSelectIgnoreLDBs(Range{0, 10}, 1, 11, 4), ShouldEqual, 1) // 0b0xxxx 0-15
-		So(wm.RangedSelectIgnoreLDBs(Range{0, 10}, 1, 11, 5), ShouldEqual, 1) // 0b0xxxxx 0-31
+		So(wm.RangedSelectIgnoreLSBs(Range{0, 10}, 1, 11, 0), ShouldEqual, 9) // 0b1011 11
+		So(wm.RangedSelectIgnoreLSBs(Range{0, 10}, 1, 11, 1), ShouldEqual, 3) // 0b101x 10-11
+		So(wm.RangedSelectIgnoreLSBs(Range{0, 10}, 1, 11, 2), ShouldEqual, 1) // 0b10xx 8-11
+		So(wm.RangedSelectIgnoreLSBs(Range{0, 10}, 1, 11, 3), ShouldEqual, 1) // 0b1xxx 8-15
+		So(wm.RangedSelectIgnoreLSBs(Range{0, 10}, 1, 11, 4), ShouldEqual, 1) // 0b0xxxx 0-15
+		So(wm.RangedSelectIgnoreLSBs(Range{0, 10}, 1, 11, 5), ShouldEqual, 1) // 0b0xxxxx 0-31
 
-		So(wm.RangedSelectIgnoreLDBs(Range{0, 10}, 2, 11, 0), ShouldEqual, 10)  // 0b1011 11
-		So(wm.RangedSelectIgnoreLDBs(Range{0, 10}, 3, 11, 0), ShouldEqual, 10)  // 0b1011 11
-		So(wm.RangedSelectIgnoreLDBs(Range{0, 10}, 9, 11, 5), ShouldEqual, 9)   // 0b0xxxxx 0-31
-		So(wm.RangedSelectIgnoreLDBs(Range{0, 10}, 10, 11, 5), ShouldEqual, 10) // 0b0xxxxx 0-31
+		So(wm.RangedSelectIgnoreLSBs(Range{0, 10}, 2, 11, 0), ShouldEqual, 10)  // 0b1011 11
+		So(wm.RangedSelectIgnoreLSBs(Range{0, 10}, 3, 11, 0), ShouldEqual, 10)  // 0b1011 11
+		So(wm.RangedSelectIgnoreLSBs(Range{0, 10}, 9, 11, 5), ShouldEqual, 9)   // 0b0xxxxx 0-31
+		So(wm.RangedSelectIgnoreLSBs(Range{0, 10}, 10, 11, 5), ShouldEqual, 10) // 0b0xxxxx 0-31
 
-		So(wm.RangedSelectIgnoreLDBs(Range{10, 20}, 0, 12, 0), ShouldEqual, 10) // 0b1100 12
-		So(wm.RangedSelectIgnoreLDBs(Range{10, 20}, 0, 12, 1), ShouldEqual, 10) // 0b110x 12-13
-		So(wm.RangedSelectIgnoreLDBs(Range{10, 20}, 0, 12, 2), ShouldEqual, 10) // 0b11xx 12-16
-		So(wm.RangedSelectIgnoreLDBs(Range{10, 20}, 0, 12, 3), ShouldEqual, 10) // 0b1xxx 8-15
-		So(wm.RangedSelectIgnoreLDBs(Range{10, 20}, 0, 12, 4), ShouldEqual, 10) // 0b0xxxx 0-15
-		So(wm.RangedSelectIgnoreLDBs(Range{10, 20}, 0, 12, 5), ShouldEqual, 10) // 0b0xxxxx 0-31
+		So(wm.RangedSelectIgnoreLSBs(Range{10, 20}, 0, 12, 0), ShouldEqual, 10) // 0b1100 12
+		So(wm.RangedSelectIgnoreLSBs(Range{10, 20}, 0, 12, 1), ShouldEqual, 10) // 0b110x 12-13
+		So(wm.RangedSelectIgnoreLSBs(Range{10, 20}, 0, 12, 2), ShouldEqual, 10) // 0b11xx 12-16
+		So(wm.RangedSelectIgnoreLSBs(Range{10, 20}, 0, 12, 3), ShouldEqual, 10) // 0b1xxx 8-15
+		So(wm.RangedSelectIgnoreLSBs(Range{10, 20}, 0, 12, 4), ShouldEqual, 10) // 0b0xxxx 0-15
+		So(wm.RangedSelectIgnoreLSBs(Range{10, 20}, 0, 12, 5), ShouldEqual, 10) // 0b0xxxxx 0-31
 	})
 }
 
@@ -293,13 +293,13 @@ func BenchmarkWTRank(b *testing.B) {
 	}
 }
 
-func BenchmarkWTRangedRankIgnoreLDBs(b *testing.B) {
+func BenchmarkWTRangedRankIgnoreLSBs(b *testing.B) {
 	dim := bf.wt.Dim()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ind := uint64(rand.Int63() % N)
 		x := uint64(rand.Int63()) % dim
-		bf.wt.RangedRankIgnoreLDBs(Range{0, ind}, x, 0)
+		bf.wt.RangedRankIgnoreLSBs(Range{0, ind}, x, 0)
 	}
 }
 
@@ -322,14 +322,14 @@ func BenchmarkWTSelect(b *testing.B) {
 	}
 }
 
-func BenchmarkWTRangedSelectIgnoreLDBs(b *testing.B) {
+func BenchmarkWTRangedSelectIgnoreLSBs(b *testing.B) {
 	wm := bf.wt
 	num := wm.Num()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		x := bf.vals[uint64(rand.Int63())%uint64(len(bf.vals))]
 		rank := uint64(rand.Int63()) % bf.counter[x]
-		bf.wt.RangedSelectIgnoreLDBs(Range{0, num}, rank, x, 0)
+		bf.wt.RangedSelectIgnoreLSBs(Range{0, num}, rank, x, 0)
 	}
 }
 
