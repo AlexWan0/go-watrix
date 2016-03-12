@@ -1,7 +1,7 @@
-// Package wavelettree provides a wavelet tree (wavelet matrix)
+// Package watrix provides a wavelet matrix (wavelet tree)
 // supporting many range-query problems, including rank/select,
 // range min/max query, most frequent and percentile query for general array.
-package wavelettree
+package watrix
 
 import (
 	"github.com/hillbig/rsdic"

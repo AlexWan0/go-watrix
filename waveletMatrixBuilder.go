@@ -1,4 +1,4 @@
-package wavelettree
+package watrix
 
 import (
 	"github.com/hillbig/rsdic"

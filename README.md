@@ -5,11 +5,11 @@ Caution
 -------
 Currently, the API is unstable because I'm experimenting various queries.
 
-[![Build Status](https://travis-ci.org/sekineh/waveletTree.svg?branch=master)](https://travis-ci.org/sekineh/waveletTree)
+[![Build Status](https://travis-ci.org/sekineh/watrix.svg?branch=master)](https://travis-ci.org/sekineh/waveletTree)
 
-waveletTree is a Go package for myriad array operations using wavelet trees.
+watrix is a Go package for myriad array operations using wavelet trees.
 
-waveletTree stores a non-negative intger array V[0...n), 0 <= V[i] < s and
+watrix stores a non-negative intger array V[0...n), 0 <= V[i] < s and
 support almost all operations in O(log s) time (not depends on num) using
 at most (n * log_2 s) bits plus small overheads for storing auxiually indices.
 
@@ -17,7 +17,7 @@ at most (n * log_2 s) bits plus small overheads for storing auxiually indices.
 Usage
 =====
 
-[![GoDoc](https://godoc.org/github.com/sekineh/waveletTree?status.svg)](https://godoc.org/github.com/sekineh/waveletTree)
+[![GoDoc](https://godoc.org/github.com/sekineh/watrix?status.svg)](https://godoc.org/github.com/sekineh/waveletTree)
 
 See godoc for reference.  It was originally folked from github.com/hillbig/WaveletTree,  
 but compatibility is not maintained.
@@ -68,11 +68,11 @@ The results shows that RSDic operations require always
 
 	go test -bench=.
 
-	// Build a waveletTree for an integer array of length 10^6 with s = 2^64
+	// Build a watrix for an integer array of length 10^6 with s = 2^64
 	BenchmarkWTBuild1M	       1	1455321650 ns/op
 	// 1.455 micro sec per an interger
 
-	// A waveletTree for an integer array of length 10M (10^7) with s = 2^64
+	// A watrix for an integer array of length 10M (10^7) with s = 2^64
 	BenchmarkWTBuild10M	       1	1467061166 ns/op
 	BenchmarkWTLookup10M	  100000	     29319 ns/op
 	BenchmarkWTRank10M	  100000	     28278 ns/op
