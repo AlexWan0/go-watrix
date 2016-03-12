@@ -1,13 +1,14 @@
-wavelettree
-============
+watrix
+======
 
 Caution
 -------
 Currently, the API is unstable because I'm experimenting various queries.
 
-[![Build Status](https://travis-ci.org/sekineh/watrix.svg?branch=master)](https://travis-ci.org/sekineh/waveletTree)
+[![Build Status](https://travis-ci.org/sekineh/waveletTree.svg?branch=master)](https://travis-ci.org/sekineh/waveletTree)
 
-watrix is a Go package for myriad array operations using wavelet trees.
+watrix is a Go package for myriad array operations using wavelet matrix
+(wavelet tree).
 
 watrix stores a non-negative intger array V[0...n), 0 <= V[i] < s and
 support almost all operations in O(log s) time (not depends on num) using
@@ -17,9 +18,9 @@ at most (n * log_2 s) bits plus small overheads for storing auxiually indices.
 Usage
 =====
 
-[![GoDoc](https://godoc.org/github.com/sekineh/watrix?status.svg)](https://godoc.org/github.com/sekineh/waveletTree)
+[![GoDoc](https://godoc.org/github.com/sekineh/waveletTree?status.svg)](https://godoc.org/github.com/sekineh/waveletTree)
 
-See godoc for reference.  It was originally folked from github.com/hillbig/WaveletTree,  
+See godoc for reference.  It was originally folked from github.com/hillbig/waveletTree,
 but compatibility is not maintained.
 
 Benchmark

@@ -4,7 +4,7 @@ import (
 	"github.com/hillbig/rsdic"
 )
 
-// WaveletMatrixBuilder builds WaveletTree from intergaer array.
+// WaveletMatrixBuilder builds WaveletMatrix from integer array.
 // A user calls PushBack()s followed by Build().
 type WaveletMatrixBuilder struct {
 	vals []uint64
