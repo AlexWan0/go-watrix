@@ -232,7 +232,7 @@ func (wm *WaveletMatrix) LookupAndRank(pos uint64) (uint64, uint64) {
 	return val, epos - bpos
 }
 
-// Quantile returns (k+1)th smallest value in T[posRange.Beg, posRange.End]
+// Quantile returns (k+1)th smallest value in T[posRange.Beg, posRange.End)
 func (wm *WaveletMatrix) Quantile(posRange Range, k uint64) uint64 {
 	val := uint64(0)
 	bpos, epos := posRange.Beg, posRange.End
