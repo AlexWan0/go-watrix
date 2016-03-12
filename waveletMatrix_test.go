@@ -32,7 +32,7 @@ func origIntersect(orig []uint64, ranges []Range, k int) []uint64 {
 	cand := make(map[uint64]int)
 	for _, ranze := range ranges {
 		set := make(map[uint64]struct{})
-		for i := ranze.Bpos; i < ranze.Epos; i++ {
+		for i := ranze.Beg; i < ranze.End; i++ {
 			set[orig[i]] = struct{}{}
 		}
 		for v, _ := range set {
@@ -103,10 +103,10 @@ func testWaveletHelper(t *testing.T, wm *WaveletMatrix, num uint64, testNum uint
 		So(wm.Intersect(ranges, 4), ShouldResemble, origIntersect(orig, ranges, 4))
 
 		ranze := generateRange(num)
-		k := uint64(rand.Int63()) % (ranze.Epos - ranze.Bpos)
-		vs := make([]int, ranze.Epos-ranze.Bpos)
+		k := uint64(rand.Int63()) % (ranze.End - ranze.Beg)
+		vs := make([]int, ranze.End-ranze.Beg)
 		for i := uint64(0); i < uint64(len(vs)); i++ {
-			vs[i] = int(orig[i+ranze.Bpos])
+			vs[i] = int(orig[i+ranze.Beg])
 		}
 		sort.Ints(vs)
 		So(wm.Quantile(ranze, k), ShouldEqual, vs[k])
@@ -337,10 +337,10 @@ func BenchmarkWM_Quantile(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ranze := generateRange(N)
-		if ranze.Epos-ranze.Bpos == 0 {
+		if ranze.End-ranze.Beg == 0 {
 			continue
 		}
-		k := uint64(rand.Int()) % (ranze.Epos - ranze.Bpos)
+		k := uint64(rand.Int()) % (ranze.End - ranze.Beg)
 		bf.wt.Quantile(ranze, k)
 	}
 }
@@ -392,8 +392,8 @@ func BenchmarkRaw_Quantile(b *testing.B) {
 	dummy := 0
 	for i := 0; i < b.N; i++ {
 		ranze := generateRange(N)
-		k := uint64(rand.Int()) % (ranze.Epos - ranze.Bpos)
-		target := vs[ranze.Bpos:ranze.Epos]
+		k := uint64(rand.Int()) % (ranze.End - ranze.Beg)
+		target := vs[ranze.Beg:ranze.End]
 		sort.Ints(target)
 		dummy += target[k]
 	}

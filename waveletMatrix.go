@@ -8,11 +8,11 @@ import (
 	"github.com/ugorji/go/codec"
 )
 
-// Range represents a range [Bpos, Epos)
-// only valid for Bpos <= Epos
+// Range represents a range [Beg, End)
+// only valid for Beg <= End
 type Range struct {
-	Bpos uint64
-	Epos uint64
+	Beg uint64
+	End uint64
 }
 
 const (
@@ -63,8 +63,8 @@ func (wm *WaveletMatrix) Lookup(pos uint64) uint64 {
 // Rank returns the number of c (== val) in T[0...pos)
 func (wm *WaveletMatrix) Rank(pos uint64, val uint64) uint64 {
 	return wm.RangedRankOp(Range{0, pos}, val, OpEqual) // Works but disabled for now to keep test cov.
-	// ranze := wm.RankRange(Range{0, pos}, val)
-	// return ranze.Epos - ranze.Bpos
+	// posRange := wm.RankRange(Range{0, pos}, val)
+	// return posRange.End - posRange.Beg
 }
 
 // RankLessThan returns the number of c (< val) in T[0...pos)
@@ -78,9 +78,9 @@ func (wm *WaveletMatrix) RankMoreThan(pos uint64, val uint64) (rankLessThan uint
 }
 
 // RangedRankOp returns the number of c that satisfies 'c op val'
-// in T[ranze.Bpos, ranze.Epos).
-// The op should be one of {OpEaual, OpLessThan, OpMoreThan}.
-func (wm *WaveletMatrix) RangedRankOp(ranze Range, val uint64, op int) uint64 {
+// in T[posRange.Beg, posRange.End).
+// The op should be one of {OpEqual, OpLessThan, OpMoreThan}.
+func (wm *WaveletMatrix) RangedRankOp(posRange Range, val uint64, op int) uint64 {
 	rankLessThan := uint64(0)
 	rankMoreThan := uint64(0)
 	for depth := uint64(0); depth < wm.blen; depth++ {
@@ -88,21 +88,21 @@ func (wm *WaveletMatrix) RangedRankOp(ranze Range, val uint64, op int) uint64 {
 		rsd := wm.layers[depth]
 		if bit {
 			if op == OpLessThan {
-				rankLessThan += rsd.Rank(ranze.Epos, false) - rsd.Rank(ranze.Bpos, false)
+				rankLessThan += rsd.Rank(posRange.End, false) - rsd.Rank(posRange.Beg, false)
 			}
-			ranze.Bpos = rsd.ZeroNum() + rsd.Rank(ranze.Bpos, bit)
-			ranze.Epos = rsd.ZeroNum() + rsd.Rank(ranze.Epos, bit)
+			posRange.Beg = rsd.ZeroNum() + rsd.Rank(posRange.Beg, bit)
+			posRange.End = rsd.ZeroNum() + rsd.Rank(posRange.End, bit)
 		} else {
 			if op == OpMoreThan {
-				rankMoreThan += rsd.Rank(ranze.Epos, true) - rsd.Rank(ranze.Bpos, true)
+				rankMoreThan += rsd.Rank(posRange.End, true) - rsd.Rank(posRange.Beg, true)
 			}
-			ranze.Bpos = rsd.Rank(ranze.Bpos, bit)
-			ranze.Epos = rsd.Rank(ranze.Epos, bit)
+			posRange.Beg = rsd.Rank(posRange.Beg, bit)
+			posRange.End = rsd.Rank(posRange.End, bit)
 		}
 	}
 	switch op {
 	case OpEqual:
-		return ranze.Epos - ranze.Bpos
+		return posRange.End - posRange.Beg
 	case OpLessThan:
 		return rankLessThan
 	case OpMoreThan:
@@ -112,40 +112,40 @@ func (wm *WaveletMatrix) RangedRankOp(ranze Range, val uint64, op int) uint64 {
 	}
 }
 
-// RangedRankRange searches T[ranze.Bpos, ranze.Epos) and
+// RangedRankRange searches T[posRange.Beg, posRange.End) and
 // returns the number of c that falls within valueRange
-// i.e. [valueRange.Bpos, valueRange.Epos).
-func (wm *WaveletMatrix) RangedRankRange(ranze Range, valueRange Range) uint64 {
-	end := wm.RangedRankOp(ranze, valueRange.Epos, OpLessThan)
-	beg := wm.RangedRankOp(ranze, valueRange.Bpos, OpLessThan)
+// i.e. [valueRange.Beg, valueRange.End).
+func (wm *WaveletMatrix) RangedRankRange(posRange Range, valueRange Range) uint64 {
+	end := wm.RangedRankOp(posRange, valueRange.End, OpLessThan)
+	beg := wm.RangedRankOp(posRange, valueRange.Beg, OpLessThan)
 	return end - beg
 }
 
-func (wm *WaveletMatrix) rangedRankIgnoreLSBsHelper(ranze Range, val uint64, ignoreBits uint64) Range {
+func (wm *WaveletMatrix) rangedRankIgnoreLSBsHelper(posRange Range, val uint64, ignoreBits uint64) Range {
 	for depth := uint64(0); depth+ignoreBits < wm.blen; depth++ {
 		bit := getMSB(val, depth, wm.blen)
 		rsd := wm.layers[depth]
 		if bit {
-			ranze.Bpos = rsd.ZeroNum() + rsd.Rank(ranze.Bpos, bit)
-			ranze.Epos = rsd.ZeroNum() + rsd.Rank(ranze.Epos, bit)
+			posRange.Beg = rsd.ZeroNum() + rsd.Rank(posRange.Beg, bit)
+			posRange.End = rsd.ZeroNum() + rsd.Rank(posRange.End, bit)
 		} else {
-			ranze.Bpos = rsd.Rank(ranze.Bpos, bit)
-			ranze.Epos = rsd.Rank(ranze.Epos, bit)
+			posRange.Beg = rsd.Rank(posRange.Beg, bit)
+			posRange.End = rsd.Rank(posRange.End, bit)
 		}
 	}
-	return ranze
+	return posRange
 }
 
-// RangedRankIgnoreLSBs searches T[ranze.Bpos, ranze.Epos) and
+// RangedRankIgnoreLSBs searches T[posRange.Beg, posRange.End) and
 // returns the number of c that matches the val.
 //
 // If ignoreBits > 0, ignoreBits-bit portion from LSB are not considered
-// for match.
+// for the match.
 // This behavior is useful for IP address prefix search such as 192.168.10.0/24
 // (ignoreBits in this case, is 8).
-func (wm *WaveletMatrix) RangedRankIgnoreLSBs(ranze Range, val, ignoreBits uint64) (rank uint64) {
-	r := wm.rangedRankIgnoreLSBsHelper(ranze, val, ignoreBits)
-	return r.Epos - r.Bpos
+func (wm *WaveletMatrix) RangedRankIgnoreLSBs(posRange Range, val, ignoreBits uint64) (rank uint64) {
+	r := wm.rangedRankIgnoreLSBsHelper(posRange, val, ignoreBits)
+	return r.End - r.Beg
 }
 
 func (wm *WaveletMatrix) rangedSelectIgnoreLSBsHelper(pos, val, ignoreBits uint64) uint64 {
@@ -161,18 +161,18 @@ func (wm *WaveletMatrix) rangedSelectIgnoreLSBsHelper(pos, val, ignoreBits uint6
 	return pos
 }
 
-// RangedSelectIgnoreLSBs searches T[ranze.Bpos, ranze.Epos) and
+// RangedSelectIgnoreLSBs searches T[posRange.Beg, posRange.End) and
 // returns the position of (rank+1)'th c that matches the val.
 //
 // If ignoreBits > 0, ignoreBits-bit portion from LSB are not considered
-// for match.
+// for the match.
 // This behavior is useful for IP address prefix search such as 192.168.10.0/24
 // (ignoreBits in this case, is 8).
-func (wm *WaveletMatrix) RangedSelectIgnoreLSBs(ranze Range, rank, val, ignoreBits uint64) uint64 {
-	r := wm.rangedRankIgnoreLSBsHelper(ranze, val, ignoreBits)
-	pos := r.Bpos + rank
-	if r.Epos <= pos {
-		return ranze.Epos
+func (wm *WaveletMatrix) RangedSelectIgnoreLSBs(posRange Range, rank, val, ignoreBits uint64) uint64 {
+	r := wm.rangedRankIgnoreLSBsHelper(posRange, val, ignoreBits)
+	pos := r.Beg + rank
+	if r.End <= pos {
+		return posRange.End
 	}
 	return wm.rangedSelectIgnoreLSBsHelper(pos, val, ignoreBits)
 }
@@ -201,13 +201,13 @@ func (wm *WaveletMatrix) selectHelper(rank uint64, val uint64, pos uint64, depth
 }
 
 // RangedSelect is a experimental query
-func (wm *WaveletMatrix) RangedSelect(ranze Range, rank uint64, val uint64) uint64 {
-	return wm.RangedSelectIgnoreLSBs(ranze, rank, val, 0)
-	// pos := wm.Select(rank+wm.Rank(ranze.Bpos, val), val)
-	// if pos < ranze.Epos {
+func (wm *WaveletMatrix) RangedSelect(posRange Range, rank uint64, val uint64) uint64 {
+	return wm.RangedSelectIgnoreLSBs(posRange, rank, val, 0)
+	// pos := wm.Select(rank+wm.Rank(posRange.Beg, val), val)
+	// if pos < posRange.End {
 	// 	return pos // Found
 	// } else {
-	// 	return ranze.Epos // Not Found
+	// 	return posRange.End // Not Found
 	// }
 }
 
@@ -232,24 +232,24 @@ func (wm *WaveletMatrix) LookupAndRank(pos uint64) (uint64, uint64) {
 	return val, epos - bpos
 }
 
-// Quantile returns (k+1)th smallest value in T[ranze.Bpos, ranze.Epos]
-func (wm *WaveletMatrix) Quantile(ranze Range, k uint64) uint64 {
+// Quantile returns (k+1)th smallest value in T[posRange.Beg, posRange.End]
+func (wm *WaveletMatrix) Quantile(posRange Range, k uint64) uint64 {
 	val := uint64(0)
-	bpos, epos := ranze.Bpos, ranze.Epos
+	bpos, epos := posRange.Beg, posRange.End
 	for depth := 0; depth < len(wm.layers); depth++ {
 		val <<= 1
 		rsd := wm.layers[depth]
-		nzBpos := rsd.Rank(bpos, false)
-		nzEpos := rsd.Rank(epos, false)
-		nz := nzEpos - nzBpos
+		nzBeg := rsd.Rank(bpos, false)
+		nzEnd := rsd.Rank(epos, false)
+		nz := nzEnd - nzBeg
 		if k < nz {
-			bpos = nzBpos
-			epos = nzEpos
+			bpos = nzBeg
+			epos = nzEnd
 		} else {
 			k -= nz
 			val |= 1
-			bpos = rsd.ZeroNum() + bpos - nzBpos
-			epos = rsd.ZeroNum() + epos - nzEpos
+			bpos = rsd.ZeroNum() + bpos - nzBeg
+			epos = rsd.ZeroNum() + epos - nzEnd
 		}
 	}
 	return val
@@ -269,17 +269,17 @@ func (wm *WaveletMatrix) intersectHelper(ranges []Range, k int, depth uint64, pr
 	rsd := wm.layers[depth]
 	zeroRanges := make([]Range, 0)
 	oneRanges := make([]Range, 0)
-	for _, ranze := range ranges {
-		bpos, epos := ranze.Bpos, ranze.Epos
-		nzBpos := rsd.Rank(bpos, false)
-		nzEpos := rsd.Rank(epos, false)
-		noBpos := bpos - nzBpos + rsd.ZeroNum()
-		noEpos := epos - nzEpos + rsd.ZeroNum()
-		if nzEpos-nzBpos > 0 {
-			zeroRanges = append(zeroRanges, Range{nzBpos, nzEpos})
+	for _, posRange := range ranges {
+		bpos, epos := posRange.Beg, posRange.End
+		nzBeg := rsd.Rank(bpos, false)
+		nzEnd := rsd.Rank(epos, false)
+		noBeg := bpos - nzBeg + rsd.ZeroNum()
+		noEnd := epos - nzEnd + rsd.ZeroNum()
+		if nzEnd-nzBeg > 0 {
+			zeroRanges = append(zeroRanges, Range{nzBeg, nzEnd})
 		}
-		if noEpos-noBpos > 0 {
-			oneRanges = append(oneRanges, Range{noBpos, noEpos})
+		if noEnd-noBeg > 0 {
+			oneRanges = append(oneRanges, Range{noBeg, noEnd})
 		}
 	}
 	ret := make([]uint64, 0)
@@ -292,7 +292,7 @@ func (wm *WaveletMatrix) intersectHelper(ranges []Range, k int, depth uint64, pr
 	return ret
 }
 
-// MarshalBinary encodes WaveletTree into a binary form and returns the result.
+// MarshalBinary encodes WaveletMatrix into a binary form and returns the result.
 func (wm *WaveletMatrix) MarshalBinary() (out []byte, err error) {
 	var bh codec.MsgpackHandle
 	enc := codec.NewEncoderBytes(&out, &bh)
@@ -321,7 +321,7 @@ func (wm *WaveletMatrix) MarshalBinary() (out []byte, err error) {
 	return
 }
 
-// UnmarshalBinary decodes WaveletTree from a binary form generated MarshalBinary
+// UnmarshalBinary decodes WaveletMatrix from a binary form generated MarshalBinary
 func (wm *WaveletMatrix) UnmarshalBinary(in []byte) (err error) {
 	var bh codec.MsgpackHandle
 	dec := codec.NewDecoderBytes(in, &bh)
