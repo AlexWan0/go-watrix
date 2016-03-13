@@ -1,6 +1,6 @@
-// Package watrix provides a wavelet matrix (wavelet tree)
-// supporting many range-query problems, including rank/select,
-// range min/max query, most frequent and percentile query for general array.
+// Package watrix is a wavelet matrix (wavelet tree) implementation.
+// It's based on hillbig/waveletTree, added some features such as
+// Ranged or IgnoreLSBs versions of Rank/Select functionality.
 package watrix
 
 import (
@@ -163,6 +163,7 @@ func (wm *WaveletMatrix) rangedSelectIgnoreLSBsHelper(pos, val, ignoreBits uint6
 
 // RangedSelectIgnoreLSBs searches T[posRange.Beg, posRange.End) and
 // returns the position of (rank+1)'th c that matches the val.
+// If no match has been found, it returns posRange.End.
 //
 // If ignoreBits > 0, ignoreBits-bit portion from LSB are not considered
 // for the match.
@@ -178,7 +179,7 @@ func (wm *WaveletMatrix) RangedSelectIgnoreLSBs(posRange Range, rank, val, ignor
 }
 
 // Select returns the position of (rank+1)-th val in T.
-// If not found, returns Num().
+// If no match has been found, it returns Num().
 func (wm *WaveletMatrix) Select(rank uint64, val uint64) uint64 {
 	return wm.selectHelper(rank, val, 0, 0)
 	// return wm.RangedSelectIgnoreLSBs(Range{0, wm.Num()}, rank, val, 0)
@@ -200,7 +201,8 @@ func (wm *WaveletMatrix) selectHelper(rank uint64, val uint64, pos uint64, depth
 	return rsd.Select(rank, bit)
 }
 
-// RangedSelect is a experimental query
+// RangedSelect takes T[posRange) and returns the position of rank+1'th val.
+// If no match has been found, it returns posRange.End.
 func (wm *WaveletMatrix) RangedSelect(posRange Range, rank uint64, val uint64) uint64 {
 	return wm.RangedSelectIgnoreLSBs(posRange, rank, val, 0)
 	// pos := wm.Select(rank+wm.Rank(posRange.Beg, val), val)
