@@ -1,4 +1,4 @@
-module go-watrix
+module github.com/AlexWan0/go-watrix
 
 go 1.22.3
 
