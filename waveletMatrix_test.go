@@ -2,10 +2,11 @@ package watrix
 
 import (
 	"fmt"
-	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
 	"sort"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func generateRange(num uint64) Range {
@@ -162,6 +163,26 @@ func TestWaveletMatrix(t *testing.T) {
 		// wm := New()
 		wm := new(WaveletMatrix)
 		err = wm.UnmarshalBinary(out)
+		So(err, ShouldBeNil)
+
+		testWaveletHelper(t, wm, num, testNum, dim, orig, ranks, ranksLessThan, ranksMoreThan)
+	})
+	Convey("When a random bit vector is marshaled into a file", t, func() {
+		num := uint64(14000)
+		dim := uint64(5)
+		testNum := uint64(10)
+		orig := make([]uint64, num)
+		ranks := make([][]uint64, dim)
+		ranksLessThan := make([][]uint64, dim)
+		ranksMoreThan := make([][]uint64, dim)
+
+		wmbefore := buildWaveletHelper(t, num, testNum, dim, orig, ranks, ranksLessThan, ranksMoreThan)
+
+		err := wmbefore.MarshalBinaryFile("test.bin")
+		So(err, ShouldBeNil)
+
+		wm := new(WaveletMatrix)
+		err = wm.UnmarshalBinaryFile("test.bin")
 		So(err, ShouldBeNil)
 
 		testWaveletHelper(t, wm, num, testNum, dim, orig, ranks, ranksLessThan, ranksMoreThan)
