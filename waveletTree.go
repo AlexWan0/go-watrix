@@ -48,8 +48,14 @@ type WaveletTree interface {
 	// MarshalBinary encodes WaveletTree into a binary form and returns the result.
 	MarshalBinary() ([]byte, error)
 
+	// MarshalBinary encodes WaveletTree into a binary form and saves it in a file.
+	MarshalBinaryFile(outpath string) error
+
 	// UnmarshalBinary decodes WaveletTree from a binary form generated MarshalBinary
 	UnmarshalBinary([]byte) error
+
+	// UnmarshalBinaryFile decodes WaveletTree from a binary file
+	UnmarshalBinaryFile(inpath string) error
 }
 
 // Builder builds WaveletTree from intergaer array.
