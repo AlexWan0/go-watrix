@@ -5,6 +5,9 @@
 package wavelettree
 
 import (
+	"bufio"
+	"os"
+
 	"github.com/hillbig/rsdic"
 	"github.com/ugorji/go/codec"
 )
@@ -193,6 +196,49 @@ func (wm waveletMatrix) MarshalBinary() (out []byte, err error) {
 	return
 }
 
+// MarshalBinary encodes WaveletMatrix into a binary form and writes it to a file.
+func (wm *waveletMatrix) MarshalBinaryFile(outpath string) error {
+	var bh codec.MsgpackHandle
+
+	f, err := os.Create(outpath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	bufWriter := bufio.NewWriter(f)
+
+	enc := codec.NewEncoder(bufWriter, &bh)
+
+	err = enc.Encode(len(wm.layers))
+	if err != nil {
+		return err
+	}
+	for i := 0; i < len(wm.layers); i++ {
+		err = enc.Encode(wm.layers[i])
+		if err != nil {
+			return err
+		}
+	}
+	err = enc.Encode(wm.dim)
+	if err != nil {
+		return err
+	}
+	err = enc.Encode(wm.num)
+	if err != nil {
+		return err
+	}
+	err = enc.Encode(wm.blen)
+	if err != nil {
+		return err
+	}
+
+	bufWriter.Flush()
+
+	return nil
+}
+
+// UnmarshalBinary decodes WaveletMatrix from a binary form generated MarshalBinary.
 func (wm *waveletMatrix) UnmarshalBinary(in []byte) (err error) {
 	var bh codec.MsgpackHandle
 	dec := codec.NewDecoderBytes(in, &bh)
@@ -222,6 +268,49 @@ func (wm *waveletMatrix) UnmarshalBinary(in []byte) (err error) {
 		return
 	}
 	return
+}
+
+// UnmarshalBinaryFile decodes WaveletMatrix from a binary file generated MarshalBinaryFile.
+func (wm *waveletMatrix) UnmarshalBinaryFile(inpath string) error {
+	var bh codec.MsgpackHandle
+
+	f, err := os.Open(inpath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	bufReader := bufio.NewReader(f)
+
+	dec := codec.NewDecoder(bufReader, &bh)
+
+	layerNum := 0
+	err = dec.Decode(&layerNum)
+	if err != nil {
+		return err
+	}
+	wm.layers = make([]rsdic.RSDic, layerNum)
+	for i := 0; i < layerNum; i++ {
+		wm.layers[i] = *rsdic.New()
+		err = dec.Decode(&wm.layers[i])
+		if err != nil {
+			return err
+		}
+	}
+	err = dec.Decode(&wm.dim)
+	if err != nil {
+		return err
+	}
+	err = dec.Decode(&wm.num)
+	if err != nil {
+		return err
+	}
+	err = dec.Decode(&wm.blen)
+	if err != nil {
+		return err
+	}
+
+	return err
 }
 
 func getMSB(x uint64, pos uint64, blen uint64) bool {

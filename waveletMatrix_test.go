@@ -1,10 +1,11 @@
 package wavelettree
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
 	"sort"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func generateRange(num uint64) Range {
