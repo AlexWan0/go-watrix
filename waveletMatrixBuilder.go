@@ -1,7 +1,7 @@
 package wavelettree
 
 import (
-	"github.com/hillbig/rsdic"
+	rsdic "github.com/AlexWan0/rsdic-mmap"
 )
 
 type waveletMatrixBuilder struct {

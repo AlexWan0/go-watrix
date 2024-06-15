@@ -9,6 +9,7 @@ require (
 )
 
 require (
+	github.com/AlexWan0/rsdic-mmap v0.0.0-20240615075700-526de7a4af0f // indirect
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
 	github.com/jtolds/gls v4.20.0+incompatible // indirect
 	github.com/smarty/assertions v1.15.0 // indirect

@@ -8,7 +8,7 @@ import (
 	"bufio"
 	"os"
 
-	"github.com/hillbig/rsdic"
+	rsdic "github.com/AlexWan0/rsdic-mmap"
 	"github.com/ugorji/go/codec"
 )
 

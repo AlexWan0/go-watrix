@@ -1,3 +1,5 @@
+github.com/AlexWan0/rsdic-mmap v0.0.0-20240615075700-526de7a4af0f h1:XQbADowEXDuijkeLr5961zRUSEZKz/l2E6RmwEBJNq4=
+github.com/AlexWan0/rsdic-mmap v0.0.0-20240615075700-526de7a4af0f/go.mod h1:alE9XTAnTMlE7BtjVluAfCODe8lkPI6eY453lJRx/r8=
 github.com/gopherjs/gopherjs v1.17.2 h1:fQnZVsXk8uxXIStYb0N4bGk7jeyTalG/wsZjQ25dO0g=
 github.com/gopherjs/gopherjs v1.17.2/go.mod h1:pRRIvn/QzFLrKfvEz3qUuEhtE/zLCWfreZ6J5gM2i+k=
 github.com/hillbig/rsdic v0.0.0-20150805052524-6158e7a2d824 h1:t71y5fcBE2nktZDXhTmPdZXrdFGBFAiHcOTTk0/+1to=
