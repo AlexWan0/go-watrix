@@ -1,4 +1,4 @@
-module watrix
+module go-watrix
 
 go 1.22.3
 
