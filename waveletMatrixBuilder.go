@@ -1,6 +1,8 @@
 package wavelettree
 
 import (
+	"os"
+
 	rsdic "github.com/AlexWan0/rsdic-mmap"
 )
 
@@ -12,7 +14,14 @@ func (wmb *waveletMatrixBuilder) PushBack(val uint64) {
 	wmb.vals = append(wmb.vals, val)
 }
 
-func (wmb *waveletMatrixBuilder) Build() WaveletTree {
+func (wmb *waveletMatrixBuilder) Build(wmPath string) (WaveletTree, error) {
+	err := os.Mkdir(wmPath, 0777)
+	if err != nil {
+		if !os.IsExist(err) {
+			return nil, err
+		}
+	}
+
 	dim := getDim(wmb.vals)
 	blen := getBinaryLen(dim)
 	zeros := wmb.vals
@@ -21,14 +30,30 @@ func (wmb *waveletMatrixBuilder) Build() WaveletTree {
 	for depth := uint64(0); depth < blen; depth++ {
 		nextZeros := make([]uint64, 0)
 		nextOnes := make([]uint64, 0)
-		rsd := rsdic.New()
+		rsdPath := getRsdicPath(wmPath, int(depth))
+		rsd, err := rsdic.New(rsdPath)
+		if err != nil {
+			return nil, err
+		}
+		err = rsd.LoadWriter()
+		if err != nil {
+			return nil, err
+		}
+		defer rsd.CloseWriter()
 		filter(zeros, blen-depth-1, &nextZeros, &nextOnes, rsd)
 		filter(ones, blen-depth-1, &nextZeros, &nextOnes, rsd)
 		zeros = nextZeros
 		ones = nextOnes
 		layers[depth] = *rsd
 	}
-	return &waveletMatrix{layers, dim, uint64(len(wmb.vals)), blen}
+
+	wm := &waveletMatrix{layers, wmPath, dim, uint64(len(wmb.vals)), blen}
+
+	err = wm.LoadReaders()
+	if err != nil {
+		return nil, err
+	}
+	return wm, nil
 }
 
 func filter(vals []uint64, depth uint64, nextZeros *[]uint64, nextOnes *[]uint64, rsd *rsdic.RSDic) {

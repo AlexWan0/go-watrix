@@ -1,5 +1,11 @@
 github.com/AlexWan0/rsdic-mmap v0.0.0-20240615075700-526de7a4af0f h1:XQbADowEXDuijkeLr5961zRUSEZKz/l2E6RmwEBJNq4=
 github.com/AlexWan0/rsdic-mmap v0.0.0-20240615075700-526de7a4af0f/go.mod h1:alE9XTAnTMlE7BtjVluAfCODe8lkPI6eY453lJRx/r8=
+github.com/AlexWan0/rsdic-mmap v0.0.0-20240619013009-bb637f08321f h1:B8msYcjBdeEJKUOX9srDysPBunuMav8lsC4HzKig7k0=
+github.com/AlexWan0/rsdic-mmap v0.0.0-20240619013009-bb637f08321f/go.mod h1:alE9XTAnTMlE7BtjVluAfCODe8lkPI6eY453lJRx/r8=
+github.com/AlexWan0/rsdic-mmap v0.0.0-20240620003553-77f5611a2d27 h1:J64pvzAbk+V7j5WnKKGqFL5xwXGC5mrXRePz2UZfsX8=
+github.com/AlexWan0/rsdic-mmap v0.0.0-20240620003553-77f5611a2d27/go.mod h1:alE9XTAnTMlE7BtjVluAfCODe8lkPI6eY453lJRx/r8=
+github.com/AlexWan0/rsdic-mmap v0.0.0-20240620005920-ac20cf37a291 h1:ckwdkanRPyewZRssFNMLo7O/oYtBQwaJsn2hyh8jrZw=
+github.com/AlexWan0/rsdic-mmap v0.0.0-20240620005920-ac20cf37a291/go.mod h1:alE9XTAnTMlE7BtjVluAfCODe8lkPI6eY453lJRx/r8=
 github.com/gopherjs/gopherjs v1.17.2 h1:fQnZVsXk8uxXIStYb0N4bGk7jeyTalG/wsZjQ25dO0g=
 github.com/gopherjs/gopherjs v1.17.2/go.mod h1:pRRIvn/QzFLrKfvEz3qUuEhtE/zLCWfreZ6J5gM2i+k=
 github.com/hillbig/rsdic v0.0.0-20150805052524-6158e7a2d824 h1:t71y5fcBE2nktZDXhTmPdZXrdFGBFAiHcOTTk0/+1to=
@@ -12,3 +18,5 @@ github.com/smartystreets/goconvey v1.8.1 h1:qGjIddxOk4grTu9JPOU31tVfq3cNdBlNa5sS
 github.com/smartystreets/goconvey v1.8.1/go.mod h1:+/u4qLyY6x1jReYOp7GOM2FSt8aP9CzCZL03bI28W60=
 github.com/ugorji/go/codec v1.2.12 h1:9LC83zGrHhuUA9l16C9AHXAqEV/2wBQ4nkvumAE65EE=
 github.com/ugorji/go/codec v1.2.12/go.mod h1:UNopzCgEMSXjBc6AOMqYvWC1ktqTAfzJZUZgYf6w6lg=
+golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8 h1:yixxcjnhBmY0nkL253HFVIm0JsFHwrHdT3Yh6szTnfY=
+golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8/go.mod h1:jj3sYF3dwk5D+ghuXyeI3r5MFf+NT2An6/9dOA95KSI=

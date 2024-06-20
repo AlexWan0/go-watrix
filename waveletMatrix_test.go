@@ -8,6 +8,8 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+const TESTPATH = "test"
+
 func generateRange(num uint64) Range {
 	bpos := uint64(rand.Intn(int(num)))
 	epos := bpos + uint64(rand.Intn(int(num-bpos)))
@@ -52,7 +54,8 @@ func origIntersect(orig []uint64, ranges []Range, k int) []uint64 {
 func TestWaveletMatrix(t *testing.T) {
 	Convey("When a vector is empty", t, func() {
 		b := NewBuilder()
-		wm := b.Build()
+		wm, err := b.Build(TESTPATH)
+		So(err, ShouldBeNil)
 		Convey("The num should be 0", func() {
 			So(wm.Num(), ShouldEqual, 0)
 			So(wm.Dim(), ShouldEqual, 0)
@@ -79,7 +82,8 @@ func TestWaveletMatrix(t *testing.T) {
 			}
 			freqs[x]++
 		}
-		wm := wmb.Build()
+		wm, err := wmb.Build(TESTPATH)
+		So(err, ShouldBeNil)
 		So(wm.Num(), ShouldEqual, num)
 		for i := 0; i < testNum; i++ {
 			ind := uint64(rand.Int31n(int32(num)))
@@ -117,10 +121,12 @@ func TestWaveletMatrix(t *testing.T) {
 			}
 			freqs[x]++
 		}
-		wmbefore := wmb.Build()
+		wmbefore, err := wmb.Build(TESTPATH)
+		So(err, ShouldBeNil)
 		out, err := wmbefore.MarshalBinary()
 		So(err, ShouldBeNil)
-		wm := New()
+		wm, err := New("test")
+		So(err, ShouldBeNil)
 		err = wm.UnmarshalBinary(out)
 		So(err, ShouldBeNil)
 		So(wm.Num(), ShouldEqual, num)
@@ -155,7 +161,7 @@ const (
 	N = 10000000 // 10M 10^7
 )
 
-func setup(num uint64) (WaveletTree, map[uint64]uint64) {
+func setup(wmPath string, num uint64) (WaveletTree, map[uint64]uint64, error) {
 	builder := NewBuilder()
 	counter := make(map[uint64]uint64)
 	for i := uint64(0); i < N; i++ {
@@ -163,7 +169,11 @@ func setup(num uint64) (WaveletTree, map[uint64]uint64) {
 		counter[x]++
 		builder.PushBack(x)
 	}
-	return builder.Build(), counter
+	wt, err := builder.Build(wmPath)
+	if err != nil {
+		return nil, nil, err
+	}
+	return wt, counter, nil
 }
 
 func BenchmarkWTBuild10M(b *testing.B) {
@@ -178,12 +188,18 @@ func BenchmarkWTBuild10M(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		builder.Build()
+		_, err := builder.Build(TESTPATH)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
 func BenchmarkWTLookup10M(b *testing.B) {
-	wt, _ := setup(N)
+	wt, _, err := setup(TESTPATH, N)
+	if err != nil {
+		b.Fatal(err)
+	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ind := uint64(rand.Int63() % N)
@@ -192,7 +208,10 @@ func BenchmarkWTLookup10M(b *testing.B) {
 }
 
 func BenchmarkWTRank10M(b *testing.B) {
-	wt, _ := setup(N)
+	wt, _, err := setup(TESTPATH, N)
+	if err != nil {
+		b.Fatal(err)
+	}
 	dim := wt.Dim()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -203,7 +222,10 @@ func BenchmarkWTRank10M(b *testing.B) {
 }
 
 func BenchmarkWTSelect10M(b *testing.B) {
-	wt, counter := setup(N)
+	wt, counter, err := setup(TESTPATH, N)
+	if err != nil {
+		b.Fatal(err)
+	}
 	vals := make([]uint64, 0)
 	for k, _ := range counter {
 		vals = append(vals, k)
@@ -217,7 +239,10 @@ func BenchmarkWTSelect10M(b *testing.B) {
 }
 
 func BenchmarkWTQuantile10M(b *testing.B) {
-	wt, counter := setup(N)
+	wt, counter, err := setup(TESTPATH, N)
+	if err != nil {
+		b.Fatal(err)
+	}
 	vals := make([]uint64, 0)
 	for k, _ := range counter {
 		vals = append(vals, k)

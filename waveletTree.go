@@ -62,7 +62,7 @@ type WaveletTree interface {
 // A user calls PushBack()s followed by Build().
 type Builder interface {
 	PushBack(val uint64)
-	Build() WaveletTree
+	Build(wmPath string) (WaveletTree, error)
 }
 
 // NewWaveletReeBuilder returns Builder

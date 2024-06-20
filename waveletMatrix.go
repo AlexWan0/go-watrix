@@ -6,25 +6,70 @@ package wavelettree
 
 import (
 	"bufio"
+	"fmt"
 	"os"
+	"path"
 
 	rsdic "github.com/AlexWan0/rsdic-mmap"
 	"github.com/ugorji/go/codec"
 )
 
-func New() WaveletTree {
+func New(wmPath string) (WaveletTree, error) {
+	err := os.Mkdir(wmPath, 0777)
+	if err != nil {
+		if !os.IsExist(err) {
+			return nil, err
+		}
+	}
+
 	return &waveletMatrix{
 		layers: make([]rsdic.RSDic, 0),
+		wmPath: wmPath,
 		dim:    0,
 		num:    0,
-		blen:   0}
+		blen:   0}, nil
 }
 
 type waveletMatrix struct {
 	layers []rsdic.RSDic
+	wmPath string
 	dim    uint64
 	num    uint64
 	blen   uint64 // =len(layers)
+}
+
+func getRsdicPath(wmPath string, depth int) string {
+	return path.Join(wmPath, fmt.Sprintf("rsdic_%d", depth))
+}
+
+func (wm waveletMatrix) LoadReaders() error {
+	for i := 0; i < len(wm.layers); i++ {
+		err := wm.layers[i].LoadReader()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (wm waveletMatrix) LoadWriters() error {
+	for i := 0; i < len(wm.layers); i++ {
+		err := wm.layers[i].LoadWriter()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (wm waveletMatrix) CloseWriters() error {
+	for i := 0; i < len(wm.layers); i++ {
+		err := wm.layers[i].CloseWriter()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (wm waveletMatrix) Num() uint64 {
@@ -249,7 +294,16 @@ func (wm *waveletMatrix) UnmarshalBinary(in []byte) (err error) {
 	}
 	wm.layers = make([]rsdic.RSDic, layerNum)
 	for i := 0; i < layerNum; i++ {
-		wm.layers[i] = *rsdic.New()
+		rsdicPath := getRsdicPath(wm.wmPath, i)
+		newRsdic, errRsdic := rsdic.New(rsdicPath)
+		if errRsdic != nil {
+			return errRsdic
+		}
+		errRead := newRsdic.LoadReader()
+		if errRead != nil {
+			return errRead
+		}
+		wm.layers[i] = *newRsdic
 		err = dec.Decode(&wm.layers[i])
 		if err != nil {
 			return
@@ -291,7 +345,16 @@ func (wm *waveletMatrix) UnmarshalBinaryFile(inpath string) error {
 	}
 	wm.layers = make([]rsdic.RSDic, layerNum)
 	for i := 0; i < layerNum; i++ {
-		wm.layers[i] = *rsdic.New()
+		rsdicPath := getRsdicPath(wm.wmPath, i)
+		newRsdic, errRsdic := rsdic.New(rsdicPath)
+		if errRsdic != nil {
+			return errRsdic
+		}
+		errRead := newRsdic.LoadReader()
+		if errRead != nil {
+			return errRead
+		}
+		wm.layers[i] = *newRsdic
 		err = dec.Decode(&wm.layers[i])
 		if err != nil {
 			return err
